@@ -1,4 +1,7 @@
 import tkinter as tk
+from tkinter import ttk
+import sqlite3
+from db_methods import get_classes, get_signs, get_bad_classes
 
 # Главное окно
 class Main(tk.Frame):
@@ -87,6 +90,8 @@ class EditorDB(tk.Toplevel):
             class_name_entry.grid_forget()
             class_name_add.grid_forget()
             class_list.grid_forget()
+            soil_classes_list.grid_forget()
+            class_name_del.grid_forget()
         
         # Удаляются все виджеты для работы с признаками
         def del_sign():
@@ -94,10 +99,13 @@ class EditorDB(tk.Toplevel):
             sign_name_entry.grid_forget()
             sign_name_add.grid_forget()
             sign_list.grid_forget()
+            sign_list_label.grid_forget()
+            sign_name_del.grid_forget()
 
         # Удаляются все виджеты для работы с возможными значениями
         def del_possible_values():
             possible_values_name.grid_forget()
+            possible_values_combobox.grid_forget()
             possible_values_type.grid_forget()
             num_label.grid_forget()
             enum_label.grid_forget()
@@ -109,17 +117,20 @@ class EditorDB(tk.Toplevel):
         # Удаляются все виджеты для работы с признаками класса
         def del_class_sign():
             class_sign_name.grid_forget()
+            class_sign_combobox.grid_forget()
             sign.grid_forget()
 
         # Удаляются все виджеты для работы с значениями для класса
         def del_class_values():
             class_values_name.grid_forget()
             sign_values_name.grid_forget()
+            class_values_combobox.grid_forget()
             list_sign.grid_forget()
 
         # Удаляются все виджеты для работы с проверкой полноты знаний
         def del_check():
-            pass
+            check_label.grid_forget()
+            bad_classes.grid_forget()
 
 
 
@@ -129,16 +140,57 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_class_soil['state'] = 'disabled'
 
-            global class_name, class_name_entry, class_name_add, class_list
+            global class_name, class_name_entry, class_name_add, class_list, soil_classes_list, class_name_del
             class_name = tk.Label(fld_frame, text='Название класса', bg='#D9D9D9')
             class_name.grid(row=0, column=0, sticky='w')
             class_name_entry = tk.Entry(fld_frame)
             class_name_entry.grid(row=1, column=0)
-            class_name_add = tk.Button(fld_frame, text='Добавить')
+
+            # Добавление нового класса
+            def add_class():
+                new_class = class_name_entry.get()
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''INSERT INTO soil_class (soil_class_name)
+                            VALUES
+                                (:p_name)'''
+                cursor.execute(query, {'p_name': new_class})
+
+                conn.commit()
+                conn.close()
+
+                soil_classes_list.insert(tk.END, new_class)
+
+            class_name_add = tk.Button(fld_frame, text='Добавить', command=add_class)
             class_name_add.grid(row=1, column=1, padx=5)
             class_list = tk.Label(fld_frame, text='Список классов', bg='#D9D9D9')
             class_list.grid(row=2, column=0, sticky='w')
-            # -------------------------------------------------------------------------------Добавить список классов
+            soil_classes_var = tk.Variable(value=get_classes())
+            soil_classes_list = tk.Listbox(fld_frame, listvariable=soil_classes_var, width=30)
+            soil_classes_list.grid(row=3, column=0, columnspan=2)
+            
+            # Удаление класса
+            def del_class():
+                selection = soil_classes_list.curselection()
+                
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''DELETE
+                            FROM soil_class
+                            WHERE soil_class_name = :p_name'''
+                cursor.execute(query, {'p_name': soil_classes_list.get(selection[0])})
+
+                conn.commit()
+                conn.close()
+
+                soil_classes_list.delete(selection[0])
+
+            class_name_del = tk.Button(fld_frame, text='Удалить', command=del_class)
+            class_name_del.grid(row=4, column=1, pady=5)
+
+
 
         # Создаются необходимые виджеты для работы с признаками
         def create_sign():
@@ -146,27 +198,73 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_sign['state'] = 'disabled'
             
-            global sign_name, sign_name_entry, sign_name_add, sign_list
+            global sign_name, sign_name_entry, sign_name_add, sign_list_label, sign_list, sign_name_del
             sign_name = tk.Label(fld_frame, text='Название признака', bg='#D9D9D9')
             sign_name.grid(row=0, column=0, sticky='w')
             sign_name_entry = tk.Entry(fld_frame)
             sign_name_entry.grid(row=1, column=0)
-            sign_name_add = tk.Button(fld_frame, text='Добавить')
+
+            # Добавление нового признака
+            def add_sign():
+                new_sign = sign_name_entry.get()
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''INSERT INTO feature (feature_name)
+                            VALUES
+                                (:p_name)'''
+                cursor.execute(query, {'p_name': new_sign})
+
+                conn.commit()
+                conn.close()
+
+                sign_list.insert(tk.END, new_sign)
+
+            sign_name_add = tk.Button(fld_frame, text='Добавить', command=add_sign)
             sign_name_add.grid(row=1, column=1, padx=5)
-            sign_list = tk.Label(fld_frame, text='Список признаков', bg='#D9D9D9')
-            sign_list.grid(row=2, column=0, sticky='w')
-            # -------------------------------------------------------------------------------Добавить список признаков
+            sign_list_label = tk.Label(fld_frame, text='Список признаков', bg='#D9D9D9')
+            sign_list_label.grid(row=2, column=0, sticky='w')
+            sign_list_var = tk.Variable(value=get_signs())
+            sign_list = tk.Listbox(fld_frame, listvariable=sign_list_var, width=30)
+            sign_list.grid(row=3, column=0, columnspan=2)
+            
+            # Удаление признака
+            def del_sign():
+                selection = sign_list.curselection()
+                
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''DELETE
+                            FROM feature
+                            WHERE feature_name = :p_name'''
+                cursor.execute(query, {'p_name': sign_list.get(selection[0])})
+
+                conn.commit()
+                conn.close()
+
+                sign_list.delete(selection[0])
+
+            sign_name_del = tk.Button(fld_frame, text='Удалить', command=del_sign)
+            sign_name_del.grid(row=4, column=1, pady=5)
         
+
+
         # Создаются необходимые виджеты для работы с возможными значениями
         def create_possible_values():
             delete_btn()
             normal_btn()
             btn_possible_values['state'] = 'disabled'
 
-            global possible_values_name, possible_values_type
+            global possible_values_name, possible_values_combobox, possible_values_type
             possible_values_name = tk.Label(fld_frame, text='Выберите признак', bg='#D9D9D9')
             possible_values_name.grid(row=0, column=0, columnspan=2, sticky='w')
-            # -------------------------------------------------------------------------------Добавить выбор признака
+            
+            cur_sign = tk.StringVar()
+            possible_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_sign, width=30)
+            possible_values_combobox['values'] = get_signs()
+            possible_values_combobox.grid(row=1, column=0)
+
             possible_values_type = tk.Label(fld_frame, text='Тип значения', bg='#D9D9D9')
             possible_values_type.grid(row=2, column=0, columnspan=2, sticky='w')
 
@@ -230,19 +328,29 @@ class EditorDB(tk.Toplevel):
             list_type = tk.Label(fld_frame, text='Список значений', bg='#D9D9D9')
             # -------------------------------------------------------------------------------Добавить список значений признаков
 
+
+
         # Создаются необходимые виджеты для работы с признаками класса
         def create_class_sign():
             delete_btn()
             normal_btn()
             btn_class_sign['state'] = 'disabled'
 
-            global class_sign_name, sign
+            global class_sign_name, class_sign_combobox, sign
             class_sign_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_sign_name.grid(row=0, column=0, sticky='w')
-            # -------------------------------------------------------------------------------Добавить выбор класса
+
+            cur_class = tk.StringVar()
+            class_sign_combobox = ttk.Combobox(fld_frame, textvariable=cur_class, width=30)
+            class_sign_combobox['values'] = get_classes()
+            class_sign_combobox.grid(row=1, column=0)
+
             sign = tk.Label(fld_frame, text='Признаки', bg='#D9D9D9')
             sign.grid(row=2, column=0, sticky='w')
+
             # -------------------------------------------------------------------------------Добавить список признаков
+
+
 
         # Создаются необходимые виджеты для работы с значениями для класса
         def create_class_values():
@@ -250,10 +358,15 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_class_values['state'] = 'disabled'
 
-            global class_values_name, sign_values_name, list_sign
+            global class_values_name, sign_values_name, class_values_combobox, list_sign
             class_values_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_values_name.grid(row=0, column=0, sticky='w')
-            # -------------------------------------------------------------------------------Добавить выбор класса
+
+            cur_class = tk.StringVar()
+            class_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_class, width=30)
+            class_values_combobox['values'] = get_classes()
+            class_values_combobox.grid(row=1, column=0)
+
             sign_values_name = tk.Label(fld_frame, text='Выберите признак', bg='#D9D9D9')
             sign_values_name.grid(row=2, column=0, sticky='w')
             # -------------------------------------------------------------------------------Добавить выбор признака
@@ -261,11 +374,21 @@ class EditorDB(tk.Toplevel):
             list_sign.grid(row=4, column=0, sticky='w')
             # -------------------------------------------------------------------------------Добавить список значений признаков
 
+
+
         # Создаются необходимые виджеты для работы с проверкой полноты знаний
         def create_check():
             delete_btn()
             normal_btn()
             btn_check['state'] = 'disabled'
+
+            global check_label, bad_classes
+
+            check_label = tk.Label(fld_frame, text='Проверку не прошли:', bg='#D9D9D9', fg='#CC0000')
+            check_label.grid(row=0, column=0, sticky='w')
+
+            bad_classes = tk.Label(fld_frame, text=get_bad_classes(), bg='#D9D9D9')
+            bad_classes.grid(row=1, column=0, sticky='w')
 
 
         btn_class_soil = tk.Button(btn_frame, text='Класс почвы', command=create_class_solid)
