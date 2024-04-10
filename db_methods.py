@@ -96,6 +96,37 @@ def get_sign_enum_value(feature_id):
     conn.close()
     return res
 
+# Получение айди класса
+def get_class_id(soil_class_name):
+    conn = sqlite3.connect('soil_pollution.sqlite')
+    cursor = conn.cursor()
+
+    query = '''SELECT soil_class_id
+                FROM soil_class
+                WHERE soil_class_name = :p_name'''
+    cursor.execute(query, {'p_name': soil_class_name})
+
+    id = cursor.fetchall()[0]
+    conn.commit()
+    conn.close()
+    return id
+
+# Получение признаков класса
+def get_class_signs(soil_class_id):
+    conn = sqlite3.connect('soil_pollution.sqlite')
+    cursor = conn.cursor()
+
+    query = '''SELECT feature_id, feature_name
+                FROM soil_class_feature
+                LEFT JOIN feature USING (feature_id)
+                WHERE soil_class_id = :p_id'''
+    cursor.execute(query, {'p_id': soil_class_id})
+    
+    res = cursor.fetchall()
+    conn.commit()
+    conn.close()
+    return res
+
 # Получение незаполненных классов
 def get_bad_classes():
     classes = ''

@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_bad_classes
+from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, get_class_signs, get_bad_classes
 
 # Главное окно
 class Main(tk.Frame):
@@ -122,7 +122,13 @@ class EditorDB(tk.Toplevel):
         def del_class_sign():
             class_sign_name.grid_forget()
             class_sign_combobox.grid_forget()
+            class_sign_button.grid_forget()
             sign.grid_forget()
+            sign_combobox.grid_forget()
+            class_sign_add_button.grid_forget()
+            class_sign.grid_forget()
+            class_sign_list.grid_forget()
+            class_sign_del.grid_forget()
 
         # Удаляются все виджеты для работы с значениями для класса
         def del_class_values():
@@ -147,7 +153,7 @@ class EditorDB(tk.Toplevel):
             global class_name, class_name_entry, class_name_add, class_list, soil_classes_list, class_name_del
             class_name = tk.Label(fld_frame, text='Название класса', bg='#D9D9D9')
             class_name.grid(row=0, column=0, sticky='w')
-            class_name_entry = tk.Entry(fld_frame)
+            class_name_entry = tk.Entry(fld_frame, width=30)
             class_name_entry.grid(row=1, column=0)
 
             # Добавление нового класса
@@ -172,7 +178,7 @@ class EditorDB(tk.Toplevel):
             class_list.grid(row=2, column=0, sticky='w')
             soil_classes_var = tk.Variable(value=get_classes())
             soil_classes_list = tk.Listbox(fld_frame, listvariable=soil_classes_var, width=30)
-            soil_classes_list.grid(row=3, column=0, columnspan=2)
+            soil_classes_list.grid(row=3, column=0)
             
             # Удаление класса
             def del_class():
@@ -205,7 +211,7 @@ class EditorDB(tk.Toplevel):
             global sign_name, sign_name_entry, sign_name_add, sign_list_label, sign_list, sign_name_del
             sign_name = tk.Label(fld_frame, text='Название признака', bg='#D9D9D9')
             sign_name.grid(row=0, column=0, sticky='w')
-            sign_name_entry = tk.Entry(fld_frame)
+            sign_name_entry = tk.Entry(fld_frame, width=30)
             sign_name_entry.grid(row=1, column=0)
 
             # Добавление нового признака
@@ -230,7 +236,7 @@ class EditorDB(tk.Toplevel):
             sign_list_label.grid(row=2, column=0, sticky='w')
             sign_list_var = tk.Variable(value=get_signs())
             sign_list = tk.Listbox(fld_frame, listvariable=sign_list_var, width=30)
-            sign_list.grid(row=3, column=0, columnspan=2)
+            sign_list.grid(row=3, column=0)
             
             # Удаление признака
             def del_sign():
@@ -338,9 +344,7 @@ class EditorDB(tk.Toplevel):
                         sign_enum_value_list.delete(first=0, last=tk.END)
                         sign_value = get_sign_enum_value(sign_id)
 
-                        print(sign_id)
                         for i in range(len(sign_value)):
-                            print(sign_value[i])
                             sign_enum_value_list.insert(tk.END, sign_value[i][1])
 
                         sign_enum_value_list.grid(row=7, column=0)
@@ -468,7 +472,7 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_class_sign['state'] = 'disabled'
 
-            global class_sign_name, class_sign_combobox, sign
+            global class_sign_name, class_sign_combobox, class_sign_button, sign, sign_combobox, class_sign_add_button, class_sign, class_sign_list, class_sign_del
             class_sign_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_sign_name.grid(row=0, column=0, sticky='w')
 
@@ -477,10 +481,78 @@ class EditorDB(tk.Toplevel):
             class_sign_combobox['values'] = get_classes()
             class_sign_combobox.grid(row=1, column=0)
 
-            sign = tk.Label(fld_frame, text='Признаки', bg='#D9D9D9')
-            sign.grid(row=2, column=0, sticky='w')
+            def view_class_signs():
+                if cur_class.get():
+                    sign.grid(row=2, column=0, sticky='w')
+                    sign_combobox.grid(row=3, column=0)
+                    class_sign_add_button.grid(row=3, column=1, padx=5, sticky='w')
+                    class_sign.grid(row=4, column=0, sticky='w')
+                    class_sign_list.delete(first=0, last=tk.END)
 
-            # -------------------------------------------------------------------------------Добавить список признаков
+                    global class_id, class_signs
+                    class_id = get_class_id(cur_class.get())[0]
+                    
+                    class_signs = get_class_signs(class_id)
+                    for i in range(len(class_signs)):
+                        class_sign_list.insert(tk.END, class_signs[i][1])
+
+                    class_sign_list.grid(row=5, column=0)
+                    class_sign_del.grid(row=6, column=1, pady=5, sticky='w')
+
+            class_sign_button = tk.Button(fld_frame, text='Посмотреть признаки класса', command=view_class_signs)
+            class_sign_button.grid(row=1, column=1, padx=5)
+
+            sign = tk.Label(fld_frame, text='Признаки', bg='#D9D9D9')
+
+            cur_sign = tk.StringVar()
+            sign_combobox = ttk.Combobox(fld_frame, textvariable=cur_sign, width=30)
+            sign_combobox['values'] = get_signs()
+
+            # Добавление признака у класса
+            def add_class_sign():
+                if cur_sign.get():
+                    # print(cur_sign.get())
+                    class_sign_id = get_sign_id(cur_sign.get())[0]
+
+                    conn = sqlite3.connect('soil_pollution.sqlite')
+                    cursor = conn.cursor()
+
+                    query = '''INSERT INTO soil_class_feature (soil_class_id, feature_id)
+                                VALUES
+                                    (:p_c_id, :p_f_id)'''
+                    cursor.execute(query, {'p_c_id': class_id, 'p_f_id': class_sign_id})
+
+                    conn.commit()
+                    conn.close()
+
+                    view_class_signs()
+
+            class_sign_add_button = tk.Button(fld_frame, text='Добавить', command=add_class_sign)
+
+            class_sign = tk.Label(fld_frame, text='Признаки класса', bg='#D9D9D9')
+            class_sign_list = tk.Listbox(fld_frame, width=30)
+
+            # Удаление признака у класса
+            def del_class_sign():
+                selection = class_sign_list.curselection()
+                class_sign_id = get_sign_id(class_sign_list.get(selection[0]))[0]
+
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''DELETE
+                            FROM soil_class_feature
+                            WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
+                cursor.execute(query, {'p_c_id': class_id, 'p_f_id': class_sign_id})
+
+                conn.commit()
+                conn.close()
+
+                class_sign_list.delete(selection[0])
+
+            class_sign_del = tk.Button(fld_frame, text='Удалить', command=del_class_sign)
+            
+            # -------------------------------------------------------------------------------Решить проблему с одинаковыми записями в бд
 
 
 
