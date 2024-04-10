@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-from db_methods import get_classes, get_signs, get_bad_classes
+from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_bad_classes
 
 # Главное окно
 class Main(tk.Frame):
@@ -110,9 +110,13 @@ class EditorDB(tk.Toplevel):
             num_label.grid_forget()
             enum_label.grid_forget()
             type_frame.grid_forget()
-            list_type.grid_forget()
+            list_type_label.grid_forget()
             type_num.grid_forget()
             type_enum.grid_forget()
+            possible_values_button.grid_forget()
+            sign_num_value_list.grid_forget()
+            sign_enum_value_list.grid_forget()
+            possible_values_del.grid_forget()
         
         # Удаляются все виджеты для работы с признаками класса
         def del_class_sign():
@@ -266,29 +270,11 @@ class EditorDB(tk.Toplevel):
             possible_values_combobox.grid(row=1, column=0)
 
             possible_values_type = tk.Label(fld_frame, text='Тип значения', bg='#D9D9D9')
-            possible_values_type.grid(row=2, column=0, columnspan=2, sticky='w')
 
-
-            global type_frame, num_label, num_l2, num_e1, num_e2, num_l3, num_b, enum_label, enum_e, enum_b, list_type, type_num, type_enum
-
-            selected_possible_values = tk.StringVar()
+            global type_frame, num_label, num_l2, num_e1, num_e2, num_l3, num_b, enum_label, enum_e, enum_b, list_type_label,  type_num, type_enum, possible_values_button, sign_num_value_list, sign_enum_value_list, possible_values_del
 
             # Фрэйм для красивого вывода полей ввода
             type_frame = tk.Frame(fld_frame, bg='#D9D9D9', bd=10)
-            type_frame.grid(row=5, column=0, columnspan=2, sticky='we')
-
-            # Виджеты для числового типа
-            num_label = tk.Label(fld_frame, text='Возможный интервал значения', bg='#D9D9D9')
-            num_l2 = tk.Label(type_frame, text='[', bg='#D9D9D9')
-            num_e1 = tk.Entry(type_frame, width=5)
-            num_e2 = tk.Entry(type_frame, width=5)
-            num_l3 = tk.Label(type_frame, text=']', bg='#D9D9D9')
-            num_b = tk.Button(type_frame, text='Добавить')
-
-            # Виджеты для перечислимого типа
-            enum_label = tk.Label(fld_frame, text='Возможное значение', bg='#D9D9D9')
-            enum_e = tk.Entry(type_frame)
-            enum_b = tk.Button(type_frame, text='Добавить')
 
             # Когда выбран числовой тип
             def select_type_num():
@@ -302,7 +288,7 @@ class EditorDB(tk.Toplevel):
                 num_e2.grid(row=0, column=2, padx=3)
                 num_l3.grid(row=0, column=3, sticky='w')
                 num_b.grid(row=0, column=4)
-                list_type.grid(row=6, column=0, sticky='w')
+                list_type_label.grid(row=6, column=0, sticky='w')
             
             # Когда выбран перечислимый тип
             def select_type_enum():
@@ -316,17 +302,163 @@ class EditorDB(tk.Toplevel):
                 enum_label.grid(row=4, column=0, columnspan=3, sticky='w')
                 enum_e.grid(row=0, column=0)
                 enum_b.grid(row=0, column=1, padx=5)
-                list_type.grid(row=6, column=0, sticky='w')
+                list_type_label.grid(row=6, column=0, sticky='w')
+
+            # Вывод возможных значений
+            def view_possible_value():
+                if cur_sign.get():
+                    possible_values_type.grid(row=2, column=0, columnspan=2, sticky='w')
+                    type_frame.grid(row=5, column=0, columnspan=2, sticky='we')
+                    type_num.grid(row=3, column=0)
+                    type_enum.grid(row=3, column=1)
+                    global sign_type, sign_id, sign_value
+                    sign_type, sign_id = get_sign_type(cur_sign.get())
+                    
+                    # Для числового типа
+                    if sign_type == 0:
+                        select_type_num()
+                        sign_enum_value_list.grid_forget()
+                        sign_num_value_list.delete(first=0, last=tk.END)
+                        sign_value = get_sign_num_value(sign_id)
+                        
+                        for i in range(len(sign_value)):
+                            if sign_value[i][2] == None:
+                                sign_value[i] = [sign_value[i][0], sign_value[i][1], '+inf']
+                            
+                            temp = f'[{sign_value[i][1]}, {sign_value[i][2]}]'
+                            sign_num_value_list.insert(tk.END, temp)
+                        
+                        sign_num_value_list.grid(row=7, column=0)
+                        possible_values_del.grid(row=8, column=1, pady=5)
+
+                    # Для перечислимого типа
+                    elif sign_type == 1:
+                        select_type_enum()
+                        sign_num_value_list.grid_forget()
+                        sign_enum_value_list.delete(first=0, last=tk.END)
+                        sign_value = get_sign_enum_value(sign_id)
+
+                        print(sign_id)
+                        for i in range(len(sign_value)):
+                            print(sign_value[i])
+                            sign_enum_value_list.insert(tk.END, sign_value[i][1])
+
+                        sign_enum_value_list.grid(row=7, column=0)
+                        possible_values_del.grid(row=8, column=1, pady=5)
+
+
+            # Добавление нового возможного значения числового признака
+            def add_num_value():
+                new_left = num_e1.get()
+                new_right = num_e2.get()
+
+                sign_id = get_sign_id(cur_sign.get())[0]
+
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''UPDATE feature
+                            SET feature_type = 0
+                            WHERE feature_id = :p_id'''
+                cursor.execute(query, {'p_id': sign_id})
+
+                if new_right == '':
+                    query = '''INSERT INTO possible_num_feature (feature_id, left_border_value)
+                                VALUES
+                                    (:p_id, :p_left)'''
+                    cursor.execute(query, {'p_id': sign_id, 'p_left': new_left})
+                    new_right = '+inf'
+                else:
+                    query = '''INSERT INTO possible_num_feature (feature_id, left_border_value, right_border_value)
+                                VALUES
+                                    (:p_id, :p_left, :p_right)'''
+                    cursor.execute(query, {'p_id': sign_id, 'p_left': new_left, 'p_right': new_right})
+                conn.commit()
+                conn.close()
+
+                view_possible_value()
             
+            # Добавление нового возможного значения перечислимого признака
+            def add_enum_value():
+                new_enum_value = enum_e.get()
+
+                sign_id = get_sign_id(cur_sign.get())[0]
+
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                query = '''UPDATE feature
+                            SET feature_type = 1
+                            WHERE feature_id = :p_id'''
+                cursor.execute(query, {'p_id': sign_id})
+
+                query = '''INSERT INTO possible_enum_feature (feature_id, possible_enum_value)
+                            VALUES
+                                (:p_id, :p_value)'''
+                cursor.execute(query, {'p_id': sign_id, 'p_value': new_enum_value})
+                conn.commit()
+                conn.close()
+
+                view_possible_value()
+
+            # Виджеты для числового типа
+            num_label = tk.Label(fld_frame, text='Возможный интервал значения', bg='#D9D9D9')
+            num_l2 = tk.Label(type_frame, text='[', bg='#D9D9D9')
+            num_e1 = tk.Entry(type_frame, width=5)
+            num_e2 = tk.Entry(type_frame, width=5)
+            num_l3 = tk.Label(type_frame, text=']', bg='#D9D9D9')
+            num_b = tk.Button(type_frame, text='Добавить', command=add_num_value)
+
+            # Виджеты для перечислимого типа
+            enum_label = tk.Label(fld_frame, text='Возможное значение', bg='#D9D9D9')
+            enum_e = tk.Entry(type_frame)
+            enum_b = tk.Button(type_frame, text='Добавить', command=add_enum_value)
+            
+            selected_possible_values = tk.StringVar()
             # Кнопки для выбора
             type_num = tk.Radiobutton(fld_frame, text='Числовой', value='Числовой', variable=selected_possible_values, command=select_type_num, bg='#D9D9D9')
-            type_num.grid(row=3, column=0)
-
             type_enum = tk.Radiobutton(fld_frame, text='Перечислимый', value='Перечислимый', variable=selected_possible_values, command=select_type_enum, bg='#D9D9D9')
-            type_enum.grid(row=3, column=1)
+            
+            list_type_label = tk.Label(fld_frame, text='Список значений', bg='#D9D9D9')
+            
+            sign_num_value_list = tk.Listbox(fld_frame, width=30, height=5)
+            sign_enum_value_list = tk.Listbox(fld_frame, width=30, height=5)
 
-            list_type = tk.Label(fld_frame, text='Список значений', bg='#D9D9D9')
-            # -------------------------------------------------------------------------------Добавить список значений признаков
+            possible_values_button = tk.Button(fld_frame, text='Список значений', command=view_possible_value)
+            possible_values_button.grid(row=1, column=1, padx=5)
+
+            # Удаление возможного значения признака
+            def del_possible_value():
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                # Для числового типа
+                if sign_type == 0:
+                    selection = sign_num_value_list.curselection()
+                    query = '''DELETE
+                                FROM possible_num_feature
+                                WHERE possible_num_feature_id = :p_id'''
+                    cursor.execute(query, {'p_id': sign_value[selection[0]][0]})
+
+                    conn.commit()
+                    conn.close()
+
+                    sign_num_value_list.delete(selection[0])
+                
+                # Для перечислимого типа
+                elif sign_type == 1:
+                    selection = sign_enum_value_list.curselection()
+                    query = '''DELETE
+                                FROM possible_enum_feature
+                                WHERE possible_enum_feature_id = :p_id'''
+                    cursor.execute(query, {'p_id': sign_value[selection[0]][0]})
+
+                    conn.commit()
+                    conn.close()
+
+                    sign_enum_value_list.delete(selection[0])
+
+            possible_values_del = tk.Button(fld_frame, text='Удалить', command=del_possible_value)
 
 
 
