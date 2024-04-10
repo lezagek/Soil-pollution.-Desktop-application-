@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, get_class_signs, get_bad_classes
+from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, get_class_signs, get_signs_not_in_class, get_bad_classes
 
 # Главное окно
 class Main(tk.Frame):
@@ -499,6 +499,8 @@ class EditorDB(tk.Toplevel):
                     class_sign_list.grid(row=5, column=0)
                     class_sign_del.grid(row=6, column=1, pady=5, sticky='w')
 
+                    sign_combobox['values'] = get_signs_not_in_class(class_id)
+
             class_sign_button = tk.Button(fld_frame, text='Посмотреть признаки класса', command=view_class_signs)
             class_sign_button.grid(row=1, column=1, padx=5)
 
@@ -506,12 +508,10 @@ class EditorDB(tk.Toplevel):
 
             cur_sign = tk.StringVar()
             sign_combobox = ttk.Combobox(fld_frame, textvariable=cur_sign, width=30)
-            sign_combobox['values'] = get_signs()
 
             # Добавление признака у класса
             def add_class_sign():
                 if cur_sign.get():
-                    # print(cur_sign.get())
                     class_sign_id = get_sign_id(cur_sign.get())[0]
 
                     conn = sqlite3.connect('soil_pollution.sqlite')
@@ -551,8 +551,6 @@ class EditorDB(tk.Toplevel):
                 class_sign_list.delete(selection[0])
 
             class_sign_del = tk.Button(fld_frame, text='Удалить', command=del_class_sign)
-            
-            # -------------------------------------------------------------------------------Решить проблему с одинаковыми записями в бд
 
 
 

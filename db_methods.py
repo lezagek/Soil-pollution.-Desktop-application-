@@ -127,6 +127,26 @@ def get_class_signs(soil_class_id):
     conn.close()
     return res
 
+# Получение признаков, которых нет в классе
+def get_signs_not_in_class(soil_class_id):
+    signs = []
+    conn = sqlite3.connect('soil_pollution.sqlite')
+    cursor = conn.cursor()
+
+    query = '''SELECT feature_name
+                FROM feature
+                LEFT JOIN soil_class_feature USING (feature_id)
+                WHERE soil_class_feature.feature_id IS NULL
+                '''
+    cursor.execute(query, {'p_id': soil_class_id})
+    
+    for sign in cursor.fetchall():
+        signs.append(sign[0])
+
+    conn.commit()
+    conn.close()
+    return signs
+
 # Получение незаполненных классов
 def get_bad_classes():
     classes = ''
