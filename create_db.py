@@ -55,6 +55,8 @@ cursor.executescript(
             soil_class_id INTEGER,
             feature_id INTEGER,
 
+            CONSTRAINT class_feature_unique UNIQUE (soil_class_id, feature_id),
+
             FOREIGN KEY (soil_class_id) REFERENCES soil_class (soil_class_id) ON DELETE CASCADE,
             FOREIGN KEY (feature_id) REFERENCES feature (feature_id) ON DELETE CASCADE
         )
