@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, get_class_signs, get_signs_not_in_class, get_bad_classes
+from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes
 
 # Главное окно
 class Main(tk.Frame):
@@ -135,7 +135,24 @@ class EditorDB(tk.Toplevel):
             class_values_name.grid_forget()
             sign_values_name.grid_forget()
             class_values_combobox.grid_forget()
-            list_sign.grid_forget()
+            class_sign_values_button.grid_forget()
+            class_sign_values_combobox.grid_forget()
+            class_values_button.grid_forget()
+            list_sign_label.grid_forget()
+            num_value_label.grid_forget()
+            num_value_l2.grid_forget()
+            num_value_e1.grid_forget()
+            num_value_e2.grid_forget()
+            num_value_e2.grid_forget()
+            num_value_l3.grid_forget()
+            num_value_b.grid_forget()
+            enum_value_label.grid_forget()
+            enum_value_e.grid_forget()
+            enum_value_b.grid_forget()
+            class_sign_num_value_list.grid_forget()
+            class_sign_enum_value_list.grid_forget()
+            class_sign_values_del.grid_forget()
+            error_message.grid_forget()
 
         # Удаляются все виджеты для работы с проверкой полноты знаний
         def del_check():
@@ -560,7 +577,7 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_class_values['state'] = 'disabled'
 
-            global class_values_name, sign_values_name, class_values_combobox, list_sign
+            global class_values_name, sign_values_name, class_values_combobox, class_sign_values_button, class_sign_values_combobox, class_values_button, type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message
             class_values_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_values_name.grid(row=0, column=0, sticky='w')
 
@@ -568,13 +585,255 @@ class EditorDB(tk.Toplevel):
             class_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_class, width=30)
             class_values_combobox['values'] = get_classes()
             class_values_combobox.grid(row=1, column=0)
+            
+            cur_sign = tk.StringVar()
+            class_sign_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_sign, width=30)
+
+            def view_class_values_signs():
+                if cur_class.get():
+                    sign_values_name.grid(row=2, column=0, sticky='w')
+                    global class_id, class_signs
+                    class_id = get_class_id(cur_class.get())[0]
+
+                    class_signs = get_class_signs(class_id)
+                    signs = []
+                    for i in range(len(class_signs)):
+                        signs.append(class_signs[i][1])
+
+                    class_sign_values_combobox['values'] = signs
+                    class_sign_values_combobox.grid(row=3, column=0)
+                    class_values_button.grid(row=3, column=1, padx=5)
+
+            class_sign_values_button = tk.Button(fld_frame, text='Посмотреть признаки класса', command=view_class_values_signs)
+            class_sign_values_button.grid(row=1, column=1, padx=5)
 
             sign_values_name = tk.Label(fld_frame, text='Выберите признак', bg='#D9D9D9')
-            sign_values_name.grid(row=2, column=0, sticky='w')
-            # -------------------------------------------------------------------------------Добавить выбор признака
-            list_sign = tk.Label(fld_frame, text='Список значений', bg='#D9D9D9')
-            list_sign.grid(row=4, column=0, sticky='w')
-            # -------------------------------------------------------------------------------Добавить список значений признаков
+
+            # Фрэйм для красивого вывода полей ввода
+            type_frame_values = tk.Frame(fld_frame, bg='#D9D9D9', bd=10)
+
+            # Когда выбран числовой тип
+            def select_type_num():
+                enum_value_label.grid_forget()
+                enum_value_e.grid_forget()
+                enum_value_b.grid_forget()
+
+                num_value_label.grid(row=4, column=0, columnspan=3, sticky='w')
+                num_value_l2.grid(row=0, column=0, sticky='w')
+                num_value_e1.grid(row=0, column=1, padx=3)
+                num_value_e2.grid(row=0, column=2, padx=3)
+                num_value_l3.grid(row=0, column=3, sticky='w')
+                num_value_b.grid(row=0, column=4)
+                list_sign_label.grid(row=6, column=0, sticky='w')
+            
+            # Когда выбран перечислимый тип
+            def select_type_enum():
+                num_value_label.grid_forget()
+                num_value_l2.grid_forget()
+                num_value_e1.grid_forget()
+                num_value_e2.grid_forget()
+                num_value_l3.grid_forget()
+                num_value_b.grid_forget()
+
+                enum_value_label.grid(row=4, column=0, columnspan=3, sticky='w')
+                enum_value_e.grid(row=0, column=0)
+                enum_value_b.grid(row=0, column=1, padx=5)
+                list_sign_label.grid(row=6, column=0, sticky='w')
+
+            # Вывод возможных значений
+            def view_class_signs_values():
+                if cur_sign.get():
+                    type_frame_values.grid(row=5, column=0, columnspan=2, sticky='we')
+                    
+                    global sign_type, sign_id, sign_value
+                    sign_type, sign_id = get_sign_type(cur_sign.get())
+
+                    # Для числового типа
+                    if sign_type == 0:
+                        select_type_num()
+                        class_sign_enum_value_list.grid_forget()
+                        class_sign_num_value_list.delete(first=0, last=tk.END)
+                        sign_value = get_class_sign_num_value(class_id, sign_id)
+                        
+                        for i in range(len(sign_value)):
+                            if sign_value[i][2] == None:
+                                sign_value[i] = [sign_value[i][0], sign_value[i][1], '+inf']
+                            
+                            temp = f'[{sign_value[i][1]}, {sign_value[i][2]}]'
+                            class_sign_num_value_list.insert(tk.END, temp)
+                        
+                        class_sign_num_value_list.grid(row=7, column=0)
+                        class_sign_values_del.grid(row=8, column=1, pady=5)
+
+                    # Для перечислимого типа
+                    elif sign_type == 1:
+                        select_type_enum()
+                        class_sign_num_value_list.grid_forget()
+                        class_sign_enum_value_list.delete(first=0, last=tk.END)
+                        sign_value = get_class_sign_enum_value(class_id, sign_id)
+
+                        for i in range(len(sign_value)):
+                            class_sign_enum_value_list.insert(tk.END, sign_value[i][1])
+
+                        class_sign_enum_value_list.grid(row=7, column=0)
+                        class_sign_values_del.grid(row=8, column=1, pady=5)
+
+            class_values_button = tk.Button(fld_frame, text='Посмотреть значения класса', command=view_class_signs_values)
+            
+            # Добавление нового возможного значения числового признака класса
+            def add_class_num_value():
+                new_left = num_value_e1.get()
+                new_right = num_value_e2.get()
+
+                sign_value = get_sign_num_value(sign_id)
+                sign_new_value = []
+
+                # Предел значений признака для сообщения ошибки 
+                range_error = ''
+
+                for i in range(len(sign_value)):
+                    if sign_value[i][2] == None:
+                        sign_new_value.append([sign_value[i][0], sign_value[i][1], '+inf'])
+                    else:
+                        sign_new_value.append([sign_value[i][0], sign_value[i][1], sign_value[i][2]])
+                    range_error += f'[{sign_new_value[i][1]}, {sign_new_value[i][2]}]'
+
+                # Если введённые значения выходят за диапазон значений признака
+                if new_left == '' or int(new_left) < sign_value[0][1] or (sign_value[0][2] != None and new_right == None) or (sign_value[0][2] != None and int(new_right) > sign_value[0][2]):
+                    error_message['text'] = f'Значение должно быть в диапазоне {range_error}'
+                    error_message.grid(row=9, column=0, sticky='w')
+                else:
+                    error_message.grid_forget()
+                    conn = sqlite3.connect('soil_pollution.sqlite')
+                    cursor = conn.cursor()
+
+                    query = '''SELECT soil_class_feature_id
+                                FROM soil_class_feature
+                                WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
+                    cursor.execute(query, {'p_c_id': class_id, 'p_f_id': sign_id})
+
+                    soil_class_feature_id = cursor.fetchall()[0][0]
+
+                    if new_right == '':
+                        query = '''INSERT INTO soil_class_num_feature (soil_class_feature_id, left_border_value)
+                                    VALUES
+                                        (:p_id, :p_left)'''
+                        cursor.execute(query, {'p_id': soil_class_feature_id, 'p_left': new_left})
+                        new_right = '+inf'
+                    else:
+                        query = '''INSERT INTO soil_class_num_feature (soil_class_feature_id, left_border_value, right_border_value)
+                                    VALUES
+                                        (:p_id, :p_left, :p_right)'''
+                        cursor.execute(query, {'p_id': soil_class_feature_id, 'p_left': new_left, 'p_right': new_right})
+                    
+                    conn.commit()
+                    conn.close()
+
+                    view_class_signs_values()
+            
+            # Добавление нового возможного значения перечислимого признака класса
+            def add_class_enum_value():
+                new_enum_value = enum_value_e.get()
+
+                sign_value = get_sign_enum_value(sign_id)
+                sign_new_value = []
+
+                is_in_feature = False
+
+                for i in range(len(sign_value)):
+                    if new_enum_value == sign_value[i][1]:
+                        is_in_feature = True
+                    sign_new_value.append(sign_value[i][1])
+
+                # Предел значений признака для сообщения ошибки 
+                range_error = ', '.join(sign_new_value)
+
+                # Если введённые значения выходят за диапазон значений признака
+                if not is_in_feature:
+                    error_message['text'] = f'Значение должно совпадать с одним из значений признака: \n{range_error}'
+                    error_message.grid(row=9, column=0, columnspan=2, sticky='w')
+                else:
+                    error_message.grid_forget()
+                    conn = sqlite3.connect('soil_pollution.sqlite')
+                    cursor = conn.cursor()
+
+                    query = '''SELECT soil_class_feature_id
+                                FROM soil_class_feature
+                                WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
+                    cursor.execute(query, {'p_c_id': class_id, 'p_f_id': sign_id})
+
+                    soil_class_feature_id = cursor.fetchall()[0][0]
+
+                    query = '''SELECT possible_enum_feature_id
+                                FROM possible_enum_feature
+                                WHERE feature_id = :p_id AND possible_enum_value = :p_name'''
+                    cursor.execute(query, {'p_id': sign_id, 'p_name': new_enum_value})
+
+                    possible_enum_feature_id = cursor.fetchall()[0][0]
+
+                    query = '''INSERT INTO soil_class_enum_feature (soil_class_feature_id, possible_enum_feature_id)
+                                VALUES
+                                    (:p_c_id, :p_f_id)'''
+                    cursor.execute(query, {'p_c_id': soil_class_feature_id, 'p_f_id': possible_enum_feature_id})
+
+                    conn.commit()
+                    conn.close()
+
+                    view_class_signs_values()
+
+            global num_value_label, num_value_l2, num_value_e1, num_value_e2, num_value_e2, num_value_l3, num_value_b, enum_value_label, enum_value_e, enum_value_b
+            # Виджеты для числового типа
+            num_value_label = tk.Label(fld_frame, text='Возможный интервал значения', bg='#D9D9D9')
+            num_value_l2 = tk.Label(type_frame_values, text='[', bg='#D9D9D9')
+            num_value_e1 = tk.Entry(type_frame_values, width=5)
+            num_value_e2 = tk.Entry(type_frame_values, width=5)
+            num_value_l3 = tk.Label(type_frame_values, text=']', bg='#D9D9D9')
+            num_value_b = tk.Button(type_frame_values, text='Добавить', command=add_class_num_value)
+
+            # Виджеты для перечислимого типа
+            enum_value_label = tk.Label(fld_frame, text='Возможное значение', bg='#D9D9D9')
+            enum_value_e = tk.Entry(type_frame_values, width=30)
+            enum_value_b = tk.Button(type_frame_values, text='Добавить', command=add_class_enum_value)
+            
+            list_sign_label = tk.Label(fld_frame, text='Список значений', bg='#D9D9D9')
+
+            class_sign_num_value_list = tk.Listbox(fld_frame, width=30, height=5)
+            class_sign_enum_value_list = tk.Listbox(fld_frame, width=30, height=5)
+
+            # Удаление возможного значения признака класса
+            def del_class_possible_value():
+                error_message.grid_forget()
+                conn = sqlite3.connect('soil_pollution.sqlite')
+                cursor = conn.cursor()
+
+                # Для числового типа
+                if sign_type == 0:
+                    selection = class_sign_num_value_list.curselection()
+                    query = '''DELETE
+                                FROM soil_class_num_feature
+                                WHERE soil_class_num_feature_id = :p_id'''
+                    cursor.execute(query, {'p_id': sign_value[selection[0]][0]})
+
+                    conn.commit()
+                    conn.close()
+
+                    class_sign_num_value_list.delete(selection[0])
+                
+                # Для перечислимого типа
+                elif sign_type == 1:
+                    selection = class_sign_enum_value_list.curselection()
+                    query = '''DELETE
+                                FROM soil_class_enum_feature
+                                WHERE soil_class_enum_feature_id = :p_id'''
+                    cursor.execute(query, {'p_id': sign_value[selection[0]][0]})
+
+                    conn.commit()
+                    conn.close()
+
+                    class_sign_enum_value_list.delete(selection[0])
+
+            class_sign_values_del = tk.Button(fld_frame, text='Удалить', command=del_class_possible_value)
+            error_message = tk.Label(fld_frame, bg='#D9D9D9', fg='#CC0000')
 
 
 
