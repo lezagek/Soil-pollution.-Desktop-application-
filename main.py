@@ -4,6 +4,8 @@ import sqlite3
 from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, \
     get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes, get_bad_signs, get_bad_classes_sign
 
+# global num_data, enum_data
+
 # Главное окно
 class Main(tk.Frame):
     def __init__(self, root):
@@ -908,7 +910,6 @@ class SolveTheTask(tk.Toplevel):
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=0)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=2)
 
         self.grab_set()
         self.focus_set()
@@ -916,11 +917,8 @@ class SolveTheTask(tk.Toplevel):
         back_frame = tk.Frame(self, bd=10)
         back_frame.grid(row=0, column=0, columnspan=2, sticky='we')
 
-        sign_frame = tk.Frame(self, bg='#D9D9D9', bd=10)
-        sign_frame.grid(row=1, column=0, sticky='wesn', padx=30, pady=30)
-
         fld_frame = tk.Frame(self, bg='#D9D9D9', bd=10)
-        fld_frame.grid(row=1, column=1, sticky='wesn', padx=30, pady=30)
+        fld_frame.grid(row=1, column=0, sticky='wesn', padx=30, pady=30)
 
         btn_frame = tk.Frame(self, bg='#D9D9D9', bd=10)
         btn_frame.grid(row=2, column=0, columnspan=2, sticky='we')
@@ -933,6 +931,125 @@ class SolveTheTask(tk.Toplevel):
 
         btn_DB = tk.Button(btn_frame, text='Просмотр базы знаний', command=self.open_viewer)
         btn_DB.grid(row=0, column=0)
+
+        sign_label = tk.Label(fld_frame, text='Выберите признак', bg='#D9D9D9')
+        sign_label.grid(row=0, column=0, sticky='w')
+
+        cur_sign = tk.StringVar()
+        sign_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_sign, width=30)
+        sign_values_combobox['values'] = get_signs()
+        sign_values_combobox.grid(row=1, column=0)
+
+        global num_data, enum_data
+        # Списки введённых данных
+        num_data = {}
+        enum_data = {}
+
+        # Фрэйм для красивого вывода полей ввода
+        type_frame = tk.Frame(fld_frame, bg='#D9D9D9', bd=10)
+
+        # Когда выбран числовой тип
+        def select_type_num():
+            enum_e.grid_forget()
+            enum_b.grid_forget()
+
+            num_l2.grid(row=0, column=0, sticky='w')
+            num_e1.grid(row=0, column=1, padx=3)
+            num_e2.grid(row=0, column=2, padx=3)
+            num_l3.grid(row=0, column=3, sticky='w')
+            num_b.grid(row=0, column=4)
+            # help_label['text'] = f'Значение в диапазоне '
+            # help_label.grid(row=4, column=0)
+            list_data_label.grid(row=5, column=0, sticky='w')
+        
+        # Когда выбран перечислимый тип
+        def select_type_enum():
+            num_l2.grid_forget()
+            num_e1.grid_forget()
+            num_e2.grid_forget()
+            num_l3.grid_forget()
+            num_b.grid_forget()
+
+            enum_e.grid(row=0, column=0)
+            enum_b.grid(row=0, column=1, padx=5)
+            # help_label['text'] = f'Значение в диапазоне '
+            # help_label.grid(row=4, column=0)
+            list_data_label.grid(row=5, column=0, sticky='w')
+
+        # Вывод введённых значений
+        def view_entered_values():
+            if cur_sign.get():
+                type_frame.grid(row=3, column=0, columnspan=2, sticky='we')
+                sign_type, sign_id = get_sign_type(cur_sign.get())
+                sign_value_label.grid(row=2, column=0, columnspan=2, sticky='w')
+
+                data_list.delete(first=0, last=tk.END)
+                data_del.grid(row=7, column=1, pady=5)
+                
+                # Для числового типа
+                if sign_type == 0:
+                    select_type_num()
+
+                # Для перечислимого типа
+                elif sign_type == 1:
+                    select_type_enum()
+
+                for sign in num_data:
+                    data_list.insert(tk.END, f'{sign} | [{num_data[sign][0]}, {num_data[sign][1]}]')
+
+                for sign in enum_data:
+                    data_list.insert(tk.END, f'{sign} | {enum_data[sign]}')
+
+                data_list.grid(row=6, column=0)
+        
+        # Добавление значение числового признака в список
+        def add_to_numdata_list():
+            if num_e2.get() == '':
+                num_data[cur_sign.get()] = [num_e1.get(), '+inf']
+            else:
+                num_data[cur_sign.get()] = [num_e1.get(), num_e2.get()]
+
+            view_entered_values()
+        
+        # Добавление значение перечислимого признака в список
+        def add_to_enumdata_list():
+            enum_data[cur_sign.get()] = enum_e.get()
+            view_entered_values()
+
+        sign_value_label = tk.Label(fld_frame, text='Введите значение', bg='#D9D9D9')
+        # Виджеты для числового типа
+        num_l2 = tk.Label(type_frame, text='[', bg='#D9D9D9')
+        num_e1 = tk.Entry(type_frame, width=5)
+        num_e2 = tk.Entry(type_frame, width=5)
+        num_l3 = tk.Label(type_frame, text=']', bg='#D9D9D9')
+        num_b = tk.Button(type_frame, text='Добавить', command=add_to_numdata_list)
+
+        # Виджеты для перечислимого типа
+        enum_e = tk.Entry(type_frame)
+        enum_b = tk.Button(type_frame, text='Добавить', command=add_to_enumdata_list)
+
+        sign_values_button = tk.Button(fld_frame, text='Ввести значение', command=view_entered_values)
+        sign_values_button.grid(row=1, column=1, padx=5)
+
+        # Возможно сделаю позже
+        # help_label = tk.Label(fld_frame, bg='#D9D9D9', fg='#606060')
+
+        list_data_label = tk.Label(fld_frame, text='Введённые данные', bg='#D9D9D9')
+        data_list = tk.Listbox(fld_frame, width=30, height=5)
+
+        # Удаление данных из списка
+        def del_data():
+            selection = data_list.curselection()
+            sign = data_list.get(selection[0]).split('|')[0][:-1]
+            
+            if sign in num_data:
+                del num_data[sign]
+            else:
+                del enum_data[sign]
+
+            data_list.delete(selection[0])
+
+        data_del = tk.Button(fld_frame, text='Удалить', command=del_data)
 
         btn_define_class = tk.Button(btn_frame, text='Определить класс почвы')
         btn_define_class.grid(row=0, column=1)
