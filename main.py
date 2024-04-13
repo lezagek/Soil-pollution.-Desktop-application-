@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes
+from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, \
+    get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes
 
 # Главное окно
 class Main(tk.Frame):
@@ -294,7 +295,8 @@ class EditorDB(tk.Toplevel):
 
             possible_values_type = tk.Label(fld_frame, text='Тип значения', bg='#D9D9D9')
 
-            global type_frame, num_label, num_l2, num_e1, num_e2, num_l3, num_b, enum_label, enum_e, enum_b, list_type_label,  type_num, type_enum, possible_values_button, sign_num_value_list, sign_enum_value_list, possible_values_del
+            global type_frame, num_label, num_l2, num_e1, num_e2, num_l3, num_b, enum_label, enum_e, enum_b, list_type_label,  type_num, type_enum, \
+                possible_values_button, sign_num_value_list, sign_enum_value_list, possible_values_del
 
             # Фрэйм для красивого вывода полей ввода
             type_frame = tk.Frame(fld_frame, bg='#D9D9D9', bd=10)
@@ -577,7 +579,8 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_class_values['state'] = 'disabled'
 
-            global class_values_name, sign_values_name, class_values_combobox, class_sign_values_button, class_sign_values_combobox, class_values_button, type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message
+            global class_values_name, sign_values_name, class_values_combobox, class_sign_values_button, class_sign_values_combobox, class_values_button, \
+                type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message
             class_values_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_values_name.grid(row=0, column=0, sticky='w')
 
@@ -699,7 +702,8 @@ class EditorDB(tk.Toplevel):
                     range_error += f'[{sign_new_value[i][1]}, {sign_new_value[i][2]}]'
 
                 # Если введённые значения выходят за диапазон значений признака
-                if new_left == '' or int(new_left) < sign_value[0][1] or (sign_value[0][2] != None and new_right == None) or (sign_value[0][2] != None and int(new_right) > sign_value[0][2]):
+                if new_left == '' or int(new_left) < sign_value[0][1] or (sign_value[0][2] != None and new_right == None) or \
+                    (sign_value[0][2] != None and int(new_right) > sign_value[0][2]):
                     error_message['text'] = f'Значение должно быть в диапазоне {range_error}'
                     error_message.grid(row=9, column=0, sticky='w')
                 else:

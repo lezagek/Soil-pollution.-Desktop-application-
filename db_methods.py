@@ -127,16 +127,19 @@ def get_class_signs(soil_class_id):
     conn.close()
     return res
 
-# Получение признаков, которых нет в классе
 def get_signs_not_in_class(soil_class_id):
     signs = []
     conn = sqlite3.connect('soil_pollution.sqlite')
     cursor = conn.cursor()
 
-    query = '''SELECT feature_name
+    query = '''SELECT DISTINCT feature_name
                 FROM feature
                 LEFT JOIN soil_class_feature USING (feature_id)
-                WHERE soil_class_feature.feature_id IS NULL
+                WHERE feature_id NOT IN(
+                    SELECT soil_class_feature.feature_id
+                    FROM soil_class_feature
+                    WHERE soil_class_id = :p_id
+                )
                 '''
     cursor.execute(query, {'p_id': soil_class_id})
     
@@ -186,29 +189,6 @@ def get_class_sign_enum_value(soil_class_id, feature_id):
     conn.close()
     return res
 
-# Исправить
-# Получение значения признаков, которых нет в классе
-# def get_signs_values_not_in_class(soil_class_id, feature_id):
-#     signs = []
-#     conn = sqlite3.connect('soil_pollution.sqlite')
-#     cursor = conn.cursor()
-
-#     query = '''SELECT feature_name
-#                 FROM feature
-#                 LEFT JOIN soil_class_feature USING (feature_id)
-#                 WHERE soil_class_feature.feature_id IS NULL
-#                 '''
-#     cursor.execute(query, {'p_c_id': soil_class_id, 'p_f_id': feature_id})
-    
-#     for sign in cursor.fetchall():
-#         signs.append(sign[0])
-
-#     conn.commit()
-#     conn.close()
-#     return signs
-
-# def get_soil_class_feature_id()
-
 # Получение незаполненных классов
 def get_bad_classes():
     classes = ''
@@ -217,6 +197,29 @@ def get_bad_classes():
 
     query = '''SELECT *
                 FROM soil_class t1
+                WHERE NOT EXISTS (
+                    SELECT t2.soil_class_id
+                    FROM soil_class_feature t2
+                    WHERE t2.soil_class_id = t1.soil_class_id
+                )'''
+    cursor.execute(query)
+    for soil_class in cursor.fetchall():
+        classes += soil_class[1] + '\n'
+    
+    conn.commit()
+    conn.close()
+
+    return classes
+
+# Получение классов с незаполненными 
+def get_bad_num_classes():
+    classes = ''
+    conn = sqlite3.connect('soil_pollution.sqlite')
+    cursor = conn.cursor()
+
+    query = '''SELECT soil_class_name
+                FROM soil_class t1
+                LEFT JOIN soil_class_feature USING (soil_class_id)
                 WHERE NOT EXISTS (
                     SELECT t2.soil_class_id
                     FROM soil_class_feature t2
