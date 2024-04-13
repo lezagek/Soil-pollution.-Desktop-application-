@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, \
-    get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes
+    get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes, get_bad_signs, get_bad_classes_sign
 
 # Главное окно
 class Main(tk.Frame):
@@ -158,7 +158,12 @@ class EditorDB(tk.Toplevel):
         # Удаляются все виджеты для работы с проверкой полноты знаний
         def del_check():
             check_label.grid_forget()
+            bad_classes_label.grid_forget()
             bad_classes.grid_forget()
+            bad_signs_label.grid_forget()
+            bad_signs.grid_forget()
+            bad_classes_sign_label.grid_forget()
+            bad_classes_sign.grid_forget()
 
 
 
@@ -338,12 +343,13 @@ class EditorDB(tk.Toplevel):
                     type_enum.grid(row=3, column=1)
                     global sign_type, sign_id, sign_value
                     sign_type, sign_id = get_sign_type(cur_sign.get())
+                    sign_num_value_list.delete(first=0, last=tk.END)
+                    sign_enum_value_list.delete(first=0, last=tk.END)
                     
                     # Для числового типа
                     if sign_type == 0:
                         select_type_num()
                         sign_enum_value_list.grid_forget()
-                        sign_num_value_list.delete(first=0, last=tk.END)
                         sign_value = get_sign_num_value(sign_id)
                         
                         for i in range(len(sign_value)):
@@ -360,7 +366,6 @@ class EditorDB(tk.Toplevel):
                     elif sign_type == 1:
                         select_type_enum()
                         sign_num_value_list.grid_forget()
-                        sign_enum_value_list.delete(first=0, last=tk.END)
                         sign_value = get_sign_enum_value(sign_id)
 
                         for i in range(len(sign_value)):
@@ -847,13 +852,27 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_check['state'] = 'disabled'
 
-            global check_label, bad_classes
+            global check_label, bad_classes_label, bad_classes, bad_signs_label, bad_signs, bad_classes_sign_label, bad_classes_sign
 
             check_label = tk.Label(fld_frame, text='Проверку не прошли:', bg='#D9D9D9', fg='#CC0000')
             check_label.grid(row=0, column=0, sticky='w')
 
+            bad_classes_label = tk.Label(fld_frame, text='Классы, у которых нет признаков:', bg='#D9D9D9')
+            bad_classes_label.grid(row=1, column=0, sticky='w')
             bad_classes = tk.Label(fld_frame, text=get_bad_classes(), bg='#D9D9D9')
-            bad_classes.grid(row=1, column=0, sticky='w')
+            bad_classes.grid(row=2, column=0, sticky='w')
+
+            bad_signs_label = tk.Label(fld_frame, text='Признаки с незаполненными значениями:', bg='#D9D9D9')
+            bad_signs_label.grid(row=3, column=0, sticky='w')
+            bad_signs = tk.Label(fld_frame, text=get_bad_signs(), bg='#D9D9D9')
+            bad_signs.grid(row=4, column=0, sticky='w')
+
+            bad_classes_sign_label = tk.Label(fld_frame, text='Классы с незаполненными значениями признаков:', bg='#D9D9D9')
+            bad_classes_sign_label.grid(row=5, column=0, sticky='w')
+            bad_classes_sign = tk.Label(fld_frame, text=get_bad_classes_sign(), bg='#D9D9D9')
+            bad_classes_sign.grid(row=6, column=0, sticky='w')
+
+            
 
 
         btn_class_soil = tk.Button(btn_frame, text='Класс почвы', command=create_class_solid)
