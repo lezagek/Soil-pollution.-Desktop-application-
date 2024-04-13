@@ -88,14 +88,14 @@ cursor.executescript(
     '''
         INSERT INTO soil_class_enum_feature (soil_class_feature_id, possible_enum_feature_id)
         VALUES
-            (3, 'НЕТ'),
-            (4, 'НЕТ'),
-            (7, 'ЕСТЬ'),
-            (8, 'НЕТ'),
-            (11, 'ЕСТЬ'),
-            (12, 'ЕСТЬ'),
-            (15, 'ЕСТЬ'),
-            (16, 'ЕСТЬ')
+            (3, 1),
+            (4, 3),
+            (7, 2),
+            (8, 3),
+            (11, 2),
+            (12, 4),
+            (15, 2),
+            (16, 4)
     '''
 )
 
