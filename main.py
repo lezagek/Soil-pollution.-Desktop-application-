@@ -928,17 +928,118 @@ class SolveTheTask(tk.Toplevel):
         btn_back = tk.Button(back_frame, text='Назад', command=lambda: self.destroy())
         btn_back.grid()
 
-
         btn_frame.grid_columnconfigure(0, weight=1)
         btn_frame.grid_columnconfigure(1, weight=1)
 
-        btn_DB = tk.Button(btn_frame, text='Просмотр базы знаний')
+        btn_DB = tk.Button(btn_frame, text='Просмотр базы знаний', command=self.open_viewer)
         btn_DB.grid(row=0, column=0)
 
         btn_define_class = tk.Button(btn_frame, text='Определить класс почвы')
         btn_define_class.grid(row=0, column=1)
+    
+    # Открытие просмотра БД
+    def open_viewer(self):
+        ViewerDB()
 
 
+
+# Окно для просмотра БД
+class ViewerDB(tk.Toplevel):
+    def __init__(self):
+        super().__init__(root)
+        self.init_editorDB()
+    
+    def init_editorDB(self):
+        self.title('Просмотр базы знаний')
+        self.geometry('480x320+400+300')
+        self.resizable(False, False)
+
+        self.grab_set()
+        self.focus_set()
+
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        back_frame = tk.Frame(self, bd=10)
+        back_frame.grid(row=0, column=0, sticky='we')
+
+        fld_frame = tk.Frame(self, bg='#D9D9D9', bd=10)
+        fld_frame.grid(row=1, column=0, sticky='wesn', padx=30, pady=30)
+
+        btn_back = tk.Button(back_frame, text='Назад', command=lambda: self.destroy())
+        btn_back.grid()
+
+
+        class_values_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
+        class_values_name.grid(row=0, column=0, sticky='w')
+
+        cur_class = tk.StringVar()
+        class_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_class, width=30)
+        class_values_combobox['values'] = get_classes()
+        class_values_combobox.grid(row=1, column=0)
+        
+        cur_sign = tk.StringVar()
+        class_sign_values_combobox = ttk.Combobox(fld_frame, textvariable=cur_sign, width=30)
+
+        def view_class_values_signs():
+            if cur_class.get():
+                sign_values_name.grid(row=2, column=0, sticky='w')
+                global class_id, class_signs
+                class_id = get_class_id(cur_class.get())[0]
+
+                class_signs = get_class_signs(class_id)
+                signs = []
+                for i in range(len(class_signs)):
+                    signs.append(class_signs[i][1])
+
+                class_sign_values_combobox['values'] = signs
+                class_sign_values_combobox.grid(row=3, column=0)
+                class_values_button.grid(row=3, column=1, padx=5)
+
+        class_sign_values_button = tk.Button(fld_frame, text='Посмотреть признаки класса', command=view_class_values_signs)
+        class_sign_values_button.grid(row=1, column=1, padx=5)
+
+        sign_values_name = tk.Label(fld_frame, text='Выберите признак', bg='#D9D9D9')
+
+        # Вывод возможных значений
+        def view_class_signs_values():
+            if cur_sign.get():
+                
+                global sign_type, sign_id, sign_value
+                sign_type, sign_id = get_sign_type(cur_sign.get())
+
+                # Для числового типа
+                if sign_type == 0:
+                    # select_type_num()
+                    class_sign_enum_value_list.grid_forget()
+                    class_sign_num_value_list.delete(first=0, last=tk.END)
+                    sign_value = get_class_sign_num_value(class_id, sign_id)
+                    
+                    for i in range(len(sign_value)):
+                        if sign_value[i][2] == None:
+                            sign_value[i] = [sign_value[i][0], sign_value[i][1], '+inf']
+                        
+                        temp = f'[{sign_value[i][1]}, {sign_value[i][2]}]'
+                        class_sign_num_value_list.insert(tk.END, temp)
+                    
+                    class_sign_num_value_list.grid(row=7, column=0)
+
+                # Для перечислимого типа
+                elif sign_type == 1:
+                    class_sign_num_value_list.grid_forget()
+                    class_sign_enum_value_list.delete(first=0, last=tk.END)
+                    sign_value = get_class_sign_enum_value(class_id, sign_id)
+
+                    for i in range(len(sign_value)):
+                        class_sign_enum_value_list.insert(tk.END, sign_value[i][1])
+
+                    class_sign_enum_value_list.grid(row=7, column=0)
+
+        class_values_button = tk.Button(fld_frame, text='Посмотреть значения класса', command=view_class_signs_values)
+
+        class_sign_num_value_list = tk.Listbox(fld_frame, width=30, height=5)
+        class_sign_enum_value_list = tk.Listbox(fld_frame, width=30, height=5)
 
 if __name__ == '__main__':
     root = tk.Tk()
