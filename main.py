@@ -155,6 +155,7 @@ class EditorDB(tk.Toplevel):
             class_sign_enum_value_list.grid_forget()
             class_sign_values_del.grid_forget()
             error_message.grid_forget()
+            if_type_none_label.grid_forget()
 
         # Удаляются все виджеты для работы с проверкой полноты знаний
         def del_check():
@@ -182,19 +183,20 @@ class EditorDB(tk.Toplevel):
 
             # Добавление нового класса
             def add_class():
-                new_class = class_name_entry.get()
-                conn = sqlite3.connect('soil_pollution.sqlite')
-                cursor = conn.cursor()
+                if class_name_entry.get():
+                    new_class = class_name_entry.get()
+                    conn = sqlite3.connect('soil_pollution.sqlite')
+                    cursor = conn.cursor()
 
-                query = '''INSERT INTO soil_class (soil_class_name)
-                            VALUES
-                                (:p_name)'''
-                cursor.execute(query, {'p_name': new_class})
+                    query = '''INSERT INTO soil_class (soil_class_name)
+                                VALUES
+                                    (:p_name)'''
+                    cursor.execute(query, {'p_name': new_class})
 
-                conn.commit()
-                conn.close()
+                    conn.commit()
+                    conn.close()
 
-                soil_classes_list.insert(tk.END, new_class)
+                    soil_classes_list.insert(tk.END, new_class)
 
             class_name_add = tk.Button(fld_frame, text='Добавить', command=add_class)
             class_name_add.grid(row=1, column=1, padx=5)
@@ -210,6 +212,7 @@ class EditorDB(tk.Toplevel):
                 
                 conn = sqlite3.connect('soil_pollution.sqlite')
                 cursor = conn.cursor()
+                cursor.execute("PRAGMA foreign_keys = ON")
 
                 query = '''DELETE
                             FROM soil_class
@@ -240,19 +243,20 @@ class EditorDB(tk.Toplevel):
 
             # Добавление нового признака
             def add_sign():
-                new_sign = sign_name_entry.get()
-                conn = sqlite3.connect('soil_pollution.sqlite')
-                cursor = conn.cursor()
+                if sign_name_entry.get():
+                    new_sign = sign_name_entry.get()
+                    conn = sqlite3.connect('soil_pollution.sqlite')
+                    cursor = conn.cursor()
 
-                query = '''INSERT INTO feature (feature_name)
-                            VALUES
-                                (:p_name)'''
-                cursor.execute(query, {'p_name': new_sign})
+                    query = '''INSERT INTO feature (feature_name)
+                                VALUES
+                                    (:p_name)'''
+                    cursor.execute(query, {'p_name': new_sign})
 
-                conn.commit()
-                conn.close()
+                    conn.commit()
+                    conn.close()
 
-                sign_list.insert(tk.END, new_sign)
+                    sign_list.insert(tk.END, new_sign)
 
             sign_name_add = tk.Button(fld_frame, text='Добавить', command=add_sign)
             sign_name_add.grid(row=1, column=1, padx=5)
@@ -268,6 +272,7 @@ class EditorDB(tk.Toplevel):
                 
                 conn = sqlite3.connect('soil_pollution.sqlite')
                 cursor = conn.cursor()
+                cursor.execute("PRAGMA foreign_keys = ON")
 
                 query = '''DELETE
                             FROM feature
@@ -586,7 +591,7 @@ class EditorDB(tk.Toplevel):
             btn_class_values['state'] = 'disabled'
 
             global class_values_name, sign_values_name, class_values_combobox, class_sign_values_button, class_sign_values_combobox, class_values_button, \
-                type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message
+                type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message, if_type_none_label
             class_values_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_values_name.grid(row=0, column=0, sticky='w')
 
@@ -656,9 +661,14 @@ class EditorDB(tk.Toplevel):
                     
                     global sign_type, sign_id, sign_value
                     sign_type, sign_id = get_sign_type(cur_sign.get())
-
+                    
+                    # Если признак не заполнен
+                    if sign_type == None:
+                        if_type_none_label.grid(row=4, column=0)
+                        
                     # Для числового типа
-                    if sign_type == 0:
+                    elif sign_type == 0:
+                        if_type_none_label.grid_forget()
                         select_type_num()
                         class_sign_enum_value_list.grid_forget()
                         class_sign_num_value_list.delete(first=0, last=tk.END)
@@ -676,6 +686,7 @@ class EditorDB(tk.Toplevel):
 
                     # Для перечислимого типа
                     elif sign_type == 1:
+                        if_type_none_label.grid_forget()
                         select_type_enum()
                         class_sign_num_value_list.grid_forget()
                         class_sign_enum_value_list.delete(first=0, last=tk.END)
@@ -688,6 +699,7 @@ class EditorDB(tk.Toplevel):
                         class_sign_values_del.grid(row=8, column=1, pady=5)
 
             class_values_button = tk.Button(fld_frame, text='Посмотреть значения класса', command=view_class_signs_values)
+            if_type_none_label = tk.Label(fld_frame, text='Признак не заполнен!', bg='#D9D9D9', fg='#CC0000')
             
             # Добавление нового возможного значения числового признака класса
             def add_class_num_value():
@@ -1168,6 +1180,11 @@ class Solution(tk.Toplevel):
                                 tk.Label(bad_frame, text=f'По введённым данным не подходит класс: {class_name}, так как', bg='#D9D9D9').grid(row=row_bad_id, column=0, sticky='w')
                                 tk.Label(bad_frame, text=f'значение признака {sign_name} должно совпадать со значением {dict_for_bad_classes[soil_class_id][2][1]}', bg='#D9D9D9').grid(row=row_bad_id+1, column=0, sticky='w')
                                 row_bad_id += 2
+                
+                if row_good_id == 0:
+                    tk.Label(fld_frame, text='Класс почвы не удалось определить. Вероятно знания, позволяющие определить класс почвы \nданного образца, не были добавлены в систему. Для разрешения ситуации обратитесь к эксперту. \nВсе классы почвы не рассматриваются по следующим причинам:', bg='#D9D9D9').grid(row=0, column=0, sticky='w')
+                elif row_bad_id != 0:
+                    tk.Label(good_frame, text='Другие классы почвы не рассматриваются по следующим причинам:\n\n', bg='#D9D9D9').grid(row=row_good_id, column=0, sticky='w')
         
         # Функция для вывода решения
         text_solution()
