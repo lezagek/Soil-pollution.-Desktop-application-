@@ -94,6 +94,7 @@ class EditorDB(tk.Toplevel):
             class_list.grid_forget()
             soil_classes_list.grid_forget()
             class_name_del.grid_forget()
+            bad_class_name.grid_forget()
         
         # Удаляются все виджеты для работы с признаками
         def del_sign():
@@ -103,6 +104,7 @@ class EditorDB(tk.Toplevel):
             sign_list.grid_forget()
             sign_list_label.grid_forget()
             sign_name_del.grid_forget()
+            bad_sign_name.grid_forget()
 
         # Удаляются все виджеты для работы с возможными значениями
         def del_possible_values():
@@ -119,6 +121,8 @@ class EditorDB(tk.Toplevel):
             sign_num_value_list.grid_forget()
             sign_enum_value_list.grid_forget()
             possible_values_del.grid_forget()
+            bad_num_value.grid_forget()
+            bad_enum_value.grid_forget()
         
         # Удаляются все виджеты для работы с признаками класса
         def del_class_sign():
@@ -156,6 +160,8 @@ class EditorDB(tk.Toplevel):
             class_sign_values_del.grid_forget()
             error_message.grid_forget()
             if_type_none_label.grid_forget()
+            bad_class_num_value.grid_forget()
+            bad_class_enum_value.grid_forget()
 
         # Удаляются все виджеты для работы с проверкой полноты знаний
         def del_check():
@@ -175,7 +181,7 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_class_soil['state'] = 'disabled'
 
-            global class_name, class_name_entry, class_name_add, class_list, soil_classes_list, class_name_del
+            global class_name, class_name_entry, class_name_add, class_list, soil_classes_list, class_name_del, bad_class_name
             class_name = tk.Label(fld_frame, text='Название класса', bg='#D9D9D9')
             class_name.grid(row=0, column=0, sticky='w')
             class_name_entry = tk.Entry(fld_frame, width=30)
@@ -184,19 +190,25 @@ class EditorDB(tk.Toplevel):
             # Добавление нового класса
             def add_class():
                 if class_name_entry.get():
-                    new_class = class_name_entry.get()
-                    conn = sqlite3.connect('soil_pollution.sqlite')
-                    cursor = conn.cursor()
+                    try:
+                        new_class = class_name_entry.get()
+                        conn = sqlite3.connect('soil_pollution.sqlite')
+                        cursor = conn.cursor()
 
-                    query = '''INSERT INTO soil_class (soil_class_name)
-                                VALUES
-                                    (:p_name)'''
-                    cursor.execute(query, {'p_name': new_class})
+                        query = '''INSERT INTO soil_class (soil_class_name)
+                                    VALUES
+                                        (:p_name)'''
+                        cursor.execute(query, {'p_name': new_class})
 
-                    conn.commit()
-                    conn.close()
+                        conn.commit()
+                        bad_class_name.grid_forget()
+                        soil_classes_list.insert(tk.END, new_class)
 
-                    soil_classes_list.insert(tk.END, new_class)
+                    except sqlite3.IntegrityError:
+                        # При попытке добавить существующий класс выведется ошибка для пользователя
+                        bad_class_name.grid(row=5, column=0)
+                    finally:
+                        conn.close()
 
             class_name_add = tk.Button(fld_frame, text='Добавить', command=add_class)
             class_name_add.grid(row=1, column=1, padx=5)
@@ -226,6 +238,7 @@ class EditorDB(tk.Toplevel):
 
             class_name_del = tk.Button(fld_frame, text='Удалить', command=del_class)
             class_name_del.grid(row=4, column=1, pady=5)
+            bad_class_name = tk.Label(fld_frame, text='Такой класс уже есть!', bg='#D9D9D9', fg='#CC0000')
 
 
 
@@ -235,7 +248,7 @@ class EditorDB(tk.Toplevel):
             normal_btn()
             btn_sign['state'] = 'disabled'
             
-            global sign_name, sign_name_entry, sign_name_add, sign_list_label, sign_list, sign_name_del
+            global sign_name, sign_name_entry, sign_name_add, sign_list_label, sign_list, sign_name_del, bad_sign_name
             sign_name = tk.Label(fld_frame, text='Название признака', bg='#D9D9D9')
             sign_name.grid(row=0, column=0, sticky='w')
             sign_name_entry = tk.Entry(fld_frame, width=30)
@@ -244,19 +257,25 @@ class EditorDB(tk.Toplevel):
             # Добавление нового признака
             def add_sign():
                 if sign_name_entry.get():
-                    new_sign = sign_name_entry.get()
-                    conn = sqlite3.connect('soil_pollution.sqlite')
-                    cursor = conn.cursor()
+                    try:
+                        new_sign = sign_name_entry.get()
+                        conn = sqlite3.connect('soil_pollution.sqlite')
+                        cursor = conn.cursor()
 
-                    query = '''INSERT INTO feature (feature_name)
-                                VALUES
-                                    (:p_name)'''
-                    cursor.execute(query, {'p_name': new_sign})
+                        query = '''INSERT INTO feature (feature_name)
+                                    VALUES
+                                        (:p_name)'''
+                        cursor.execute(query, {'p_name': new_sign})
 
-                    conn.commit()
-                    conn.close()
+                        conn.commit()
+                        bad_sign_name.grid_forget()
+                        sign_list.insert(tk.END, new_sign)
 
-                    sign_list.insert(tk.END, new_sign)
+                    except sqlite3.IntegrityError:
+                        # При попытке добавить существующий признак выведется ошибка для пользователя
+                        bad_sign_name.grid(row=5, column=0)
+                    finally:
+                        conn.close()
 
             sign_name_add = tk.Button(fld_frame, text='Добавить', command=add_sign)
             sign_name_add.grid(row=1, column=1, padx=5)
@@ -286,6 +305,7 @@ class EditorDB(tk.Toplevel):
 
             sign_name_del = tk.Button(fld_frame, text='Удалить', command=del_sign)
             sign_name_del.grid(row=4, column=1, pady=5)
+            bad_sign_name = tk.Label(fld_frame, text='Такой признак уже есть!', bg='#D9D9D9', fg='#CC0000')
         
 
 
@@ -307,7 +327,7 @@ class EditorDB(tk.Toplevel):
             possible_values_type = tk.Label(fld_frame, text='Тип значения', bg='#D9D9D9')
 
             global type_frame, num_label, num_l2, num_e1, num_e2, num_l3, num_b, enum_label, enum_e, enum_b, list_type_label,  type_num, type_enum, \
-                possible_values_button, sign_num_value_list, sign_enum_value_list, possible_values_del
+                possible_values_button, sign_num_value_list, sign_enum_value_list, possible_values_del, bad_num_value, bad_enum_value
 
             # Фрэйм для красивого вывода полей ввода
             type_frame = tk.Frame(fld_frame, bg='#D9D9D9', bd=10)
@@ -382,58 +402,74 @@ class EditorDB(tk.Toplevel):
 
 
             # Добавление нового возможного значения числового признака
-            def add_num_value():
-                new_left = num_e1.get()
-                new_right = num_e2.get()
+            def add_num_value(): 
+                if num_e1.get():
+                    try:
+                        new_left = num_e1.get()
+                        new_right = num_e2.get()
 
-                sign_id = get_sign_id(cur_sign.get())[0]
+                        sign_id = get_sign_id(cur_sign.get())[0]
 
-                conn = sqlite3.connect('soil_pollution.sqlite')
-                cursor = conn.cursor()
+                        conn = sqlite3.connect('soil_pollution.sqlite')
+                        cursor = conn.cursor()
+                        cursor.execute("PRAGMA foreign_keys = ON")
 
-                query = '''UPDATE feature
-                            SET feature_type = 0
-                            WHERE feature_id = :p_id'''
-                cursor.execute(query, {'p_id': sign_id})
+                        query = '''UPDATE feature
+                                    SET feature_type = 0
+                                    WHERE feature_id = :p_id'''
+                        cursor.execute(query, {'p_id': sign_id})
 
-                if new_right == '':
-                    query = '''INSERT INTO possible_num_feature (feature_id, left_border_value)
-                                VALUES
-                                    (:p_id, :p_left)'''
-                    cursor.execute(query, {'p_id': sign_id, 'p_left': new_left})
-                    new_right = '+inf'
-                else:
-                    query = '''INSERT INTO possible_num_feature (feature_id, left_border_value, right_border_value)
-                                VALUES
-                                    (:p_id, :p_left, :p_right)'''
-                    cursor.execute(query, {'p_id': sign_id, 'p_left': new_left, 'p_right': new_right})
-                conn.commit()
-                conn.close()
+                        if new_right == '':
+                            query = '''INSERT INTO possible_num_feature (feature_id, left_border_value)
+                                        VALUES
+                                            (:p_id, :p_left)'''
+                            cursor.execute(query, {'p_id': sign_id, 'p_left': new_left})
+                            new_right = '+inf'
+                        else:
+                            query = '''INSERT INTO possible_num_feature (feature_id, left_border_value, right_border_value)
+                                        VALUES
+                                            (:p_id, :p_left, :p_right)'''
+                            cursor.execute(query, {'p_id': sign_id, 'p_left': new_left, 'p_right': new_right})
+                        conn.commit()
+                        bad_num_value.grid_forget()
+                        view_possible_value()
 
-                view_possible_value()
+                    except sqlite3.IntegrityError:
+                        # При попытке добавить существующее значение выведется ошибка для пользователя
+                        bad_num_value.grid(row=9, column=0)
+                    finally:
+                        conn.close()
             
             # Добавление нового возможного значения перечислимого признака
             def add_enum_value():
-                new_enum_value = enum_e.get()
+                if enum_e.get():
+                    try:
+                        new_enum_value = enum_e.get()
 
-                sign_id = get_sign_id(cur_sign.get())[0]
+                        sign_id = get_sign_id(cur_sign.get())[0]
 
-                conn = sqlite3.connect('soil_pollution.sqlite')
-                cursor = conn.cursor()
+                        conn = sqlite3.connect('soil_pollution.sqlite')
+                        cursor = conn.cursor()
+                        cursor.execute("PRAGMA foreign_keys = ON")
 
-                query = '''UPDATE feature
-                            SET feature_type = 1
-                            WHERE feature_id = :p_id'''
-                cursor.execute(query, {'p_id': sign_id})
+                        query = '''UPDATE feature
+                                    SET feature_type = 1
+                                    WHERE feature_id = :p_id'''
+                        cursor.execute(query, {'p_id': sign_id})
 
-                query = '''INSERT INTO possible_enum_feature (feature_id, possible_enum_value)
-                            VALUES
-                                (:p_id, :p_value)'''
-                cursor.execute(query, {'p_id': sign_id, 'p_value': new_enum_value})
-                conn.commit()
-                conn.close()
+                        query = '''INSERT INTO possible_enum_feature (feature_id, possible_enum_value)
+                                    VALUES
+                                        (:p_id, :p_value)'''
+                        cursor.execute(query, {'p_id': sign_id, 'p_value': new_enum_value})
+                        conn.commit()
+                        bad_enum_value.grid_forget()
+                        view_possible_value()
 
-                view_possible_value()
+                    except sqlite3.IntegrityError:
+                        # При попытке добавить существующее значение выведется ошибка для пользователя
+                        bad_enum_value.grid(row=9, column=0)
+                    finally:
+                        conn.close()
 
             # Виджеты для числового типа
             num_label = tk.Label(fld_frame, text='Возможный интервал значения', bg='#D9D9D9')
@@ -493,6 +529,8 @@ class EditorDB(tk.Toplevel):
                     sign_enum_value_list.delete(selection[0])
 
             possible_values_del = tk.Button(fld_frame, text='Удалить', command=del_possible_value)
+            bad_num_value = tk.Label(fld_frame, text='Такое значение уже есть!', bg='#D9D9D9', fg='#CC0000')
+            bad_enum_value = tk.Label(fld_frame, text='Такое значение уже есть!', bg='#D9D9D9', fg='#CC0000')
 
 
 
@@ -591,7 +629,7 @@ class EditorDB(tk.Toplevel):
             btn_class_values['state'] = 'disabled'
 
             global class_values_name, sign_values_name, class_values_combobox, class_sign_values_button, class_sign_values_combobox, class_values_button, \
-                type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message, if_type_none_label
+                type_frame_values, list_sign_label, class_sign_num_value_list, class_sign_enum_value_list, class_sign_values_del, error_message, if_type_none_label, bad_class_num_value, bad_class_enum_value
             class_values_name = tk.Label(fld_frame, text='Выберите класс', bg='#D9D9D9')
             class_values_name.grid(row=0, column=0, sticky='w')
 
@@ -703,105 +741,120 @@ class EditorDB(tk.Toplevel):
             
             # Добавление нового возможного значения числового признака класса
             def add_class_num_value():
-                new_left = num_value_e1.get()
-                new_right = num_value_e2.get()
+                if num_value_e1.get():
+                    try:
+                        new_left = num_value_e1.get()
+                        new_right = num_value_e2.get()
 
-                sign_value = get_sign_num_value(sign_id)
-                sign_new_value = []
+                        sign_value = get_sign_num_value(sign_id)
+                        sign_new_value = []
 
-                # Предел значений признака для сообщения ошибки 
-                range_error = ''
+                        # Предел значений признака для сообщения ошибки 
+                        range_error = ''
 
-                for i in range(len(sign_value)):
-                    if sign_value[i][2] == None:
-                        sign_new_value.append([sign_value[i][0], sign_value[i][1], '+inf'])
-                    else:
-                        sign_new_value.append([sign_value[i][0], sign_value[i][1], sign_value[i][2]])
-                    range_error += f'[{sign_new_value[i][1]}, {sign_new_value[i][2]}]'
+                        for i in range(len(sign_value)):
+                            if sign_value[i][2] == None:
+                                sign_new_value.append([sign_value[i][0], sign_value[i][1], '+inf'])
+                            else:
+                                sign_new_value.append([sign_value[i][0], sign_value[i][1], sign_value[i][2]])
+                            range_error += f'[{sign_new_value[i][1]}, {sign_new_value[i][2]}]'
 
-                # Если введённые значения выходят за диапазон значений признака
-                if new_left == '' or int(new_left) < sign_value[0][1] or (sign_value[0][2] != None and new_right == None) or \
-                    (sign_value[0][2] != None and int(new_right) > sign_value[0][2]):
-                    error_message['text'] = f'Значение должно быть в диапазоне {range_error}'
-                    error_message.grid(row=9, column=0, sticky='w')
-                else:
-                    error_message.grid_forget()
-                    conn = sqlite3.connect('soil_pollution.sqlite')
-                    cursor = conn.cursor()
+                        # Если введённые значения выходят за диапазон значений признака
+                        if new_left == '' or int(new_left) < sign_value[0][1] or (sign_value[0][2] != None and new_right == None) or \
+                            (sign_value[0][2] != None and int(new_right) > sign_value[0][2]):
+                            error_message['text'] = f'Значение должно быть в диапазоне {range_error}'
+                            error_message.grid(row=9, column=0, sticky='w')
+                        else:
+                            error_message.grid_forget()
+                            conn = sqlite3.connect('soil_pollution.sqlite')
+                            cursor = conn.cursor()
 
-                    query = '''SELECT soil_class_feature_id
-                                FROM soil_class_feature
-                                WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
-                    cursor.execute(query, {'p_c_id': class_id, 'p_f_id': sign_id})
+                            query = '''SELECT soil_class_feature_id
+                                        FROM soil_class_feature
+                                        WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
+                            cursor.execute(query, {'p_c_id': class_id, 'p_f_id': sign_id})
 
-                    soil_class_feature_id = cursor.fetchall()[0][0]
+                            soil_class_feature_id = cursor.fetchall()[0][0]
 
-                    if new_right == '':
-                        query = '''INSERT INTO soil_class_num_feature (soil_class_feature_id, left_border_value)
-                                    VALUES
-                                        (:p_id, :p_left)'''
-                        cursor.execute(query, {'p_id': soil_class_feature_id, 'p_left': new_left})
-                        new_right = '+inf'
-                    else:
-                        query = '''INSERT INTO soil_class_num_feature (soil_class_feature_id, left_border_value, right_border_value)
-                                    VALUES
-                                        (:p_id, :p_left, :p_right)'''
-                        cursor.execute(query, {'p_id': soil_class_feature_id, 'p_left': new_left, 'p_right': new_right})
-                    
-                    conn.commit()
-                    conn.close()
+                            if new_right == '':
+                                query = '''INSERT INTO soil_class_num_feature (soil_class_feature_id, left_border_value)
+                                            VALUES
+                                                (:p_id, :p_left)'''
+                                cursor.execute(query, {'p_id': soil_class_feature_id, 'p_left': new_left})
+                                new_right = '+inf'
+                            else:
+                                query = '''INSERT INTO soil_class_num_feature (soil_class_feature_id, left_border_value, right_border_value)
+                                            VALUES
+                                                (:p_id, :p_left, :p_right)'''
+                                cursor.execute(query, {'p_id': soil_class_feature_id, 'p_left': new_left, 'p_right': new_right})
+                            
+                            conn.commit()
+                            bad_class_num_value.grid_forget()
+                            view_class_signs_values()
 
-                    view_class_signs_values()
+                    except sqlite3.IntegrityError:
+                        # При попытке добавить существующее значение выведется ошибка для пользователя
+                        bad_class_num_value.grid(row=9, column=0)
+                    finally:
+                        conn.close()
             
             # Добавление нового возможного значения перечислимого признака класса
             def add_class_enum_value():
-                new_enum_value = enum_value_e.get()
+                if enum_value_e.get():
+                    try:
+                        new_enum_value = enum_value_e.get()
 
-                sign_value = get_sign_enum_value(sign_id)
-                sign_new_value = []
+                        sign_value = get_sign_enum_value(sign_id)
+                        sign_new_value = []
 
-                is_in_feature = False
+                        is_in_feature = False
 
-                for i in range(len(sign_value)):
-                    if new_enum_value == sign_value[i][1]:
-                        is_in_feature = True
-                    sign_new_value.append(sign_value[i][1])
+                        for i in range(len(sign_value)):
+                            if new_enum_value == sign_value[i][1]:
+                                is_in_feature = True
+                            sign_new_value.append(sign_value[i][1])
 
-                # Предел значений признака для сообщения ошибки 
-                range_error = ', '.join(sign_new_value)
+                        # Предел значений признака для сообщения ошибки 
+                        range_error = ', '.join(sign_new_value)
 
-                # Если введённые значения выходят за диапазон значений признака
-                if not is_in_feature:
-                    error_message['text'] = f'Значение должно совпадать с одним из значений признака: \n{range_error}'
-                    error_message.grid(row=9, column=0, columnspan=2, sticky='w')
-                else:
-                    error_message.grid_forget()
-                    conn = sqlite3.connect('soil_pollution.sqlite')
-                    cursor = conn.cursor()
+                        # Если введённые значения выходят за диапазон значений признака
+                        if not is_in_feature:
+                            error_message['text'] = f'Значение должно совпадать с одним из значений признака: \n{range_error}'
+                            error_message.grid(row=9, column=0, columnspan=2, sticky='w')
+                        else:
+                            error_message.grid_forget()
+                            conn = sqlite3.connect('soil_pollution.sqlite')
+                            cursor = conn.cursor()
 
-                    query = '''SELECT soil_class_feature_id
-                                FROM soil_class_feature
-                                WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
-                    cursor.execute(query, {'p_c_id': class_id, 'p_f_id': sign_id})
+                            query = '''SELECT soil_class_feature_id
+                                        FROM soil_class_feature
+                                        WHERE soil_class_id = :p_c_id AND feature_id = :p_f_id'''
+                            cursor.execute(query, {'p_c_id': class_id, 'p_f_id': sign_id})
 
-                    soil_class_feature_id = cursor.fetchall()[0][0]
+                            soil_class_feature_id = cursor.fetchall()[0][0]
 
-                    query = '''SELECT possible_enum_feature_id
-                                FROM possible_enum_feature
-                                WHERE feature_id = :p_id AND possible_enum_value = :p_name'''
-                    cursor.execute(query, {'p_id': sign_id, 'p_name': new_enum_value})
+                            query = '''SELECT possible_enum_feature_id
+                                        FROM possible_enum_feature
+                                        WHERE feature_id = :p_id AND possible_enum_value = :p_name'''
+                            cursor.execute(query, {'p_id': sign_id, 'p_name': new_enum_value})
 
-                    possible_enum_feature_id = cursor.fetchall()[0][0]
+                            possible_enum_feature_id = cursor.fetchall()[0][0]
 
-                    query = '''INSERT INTO soil_class_enum_feature (soil_class_feature_id, possible_enum_feature_id)
-                                VALUES
-                                    (:p_c_id, :p_f_id)'''
-                    cursor.execute(query, {'p_c_id': soil_class_feature_id, 'p_f_id': possible_enum_feature_id})
+                            query = '''INSERT INTO soil_class_enum_feature (soil_class_feature_id, possible_enum_feature_id)
+                                        VALUES
+                                            (:p_c_id, :p_f_id)'''
+                            cursor.execute(query, {'p_c_id': soil_class_feature_id, 'p_f_id': possible_enum_feature_id})
 
-                    conn.commit()
-                    conn.close()
+                            conn.commit()
+                            bad_class_enum_value.grid_forget()
+                            view_class_signs_values()
+                            
+                    except sqlite3.IntegrityError:
+                        # При попытке добавить существующее значение выведется ошибка для пользователя
+                        bad_class_enum_value.grid(row=10, column=0)
+                    finally:
+                        conn.close()
 
-                    view_class_signs_values()
 
             global num_value_label, num_value_l2, num_value_e1, num_value_e2, num_value_e2, num_value_l3, num_value_b, enum_value_label, enum_value_e, enum_value_b
             # Виджеты для числового типа
@@ -856,6 +909,8 @@ class EditorDB(tk.Toplevel):
 
             class_sign_values_del = tk.Button(fld_frame, text='Удалить', command=del_class_possible_value)
             error_message = tk.Label(fld_frame, bg='#D9D9D9', fg='#CC0000')
+            bad_class_num_value = tk.Label(fld_frame, text='Такое значение уже есть!', bg='#D9D9D9', fg='#CC0000')
+            bad_class_enum_value = tk.Label(fld_frame, text='Такое значение уже есть!', bg='#D9D9D9', fg='#CC0000')
 
 
 
