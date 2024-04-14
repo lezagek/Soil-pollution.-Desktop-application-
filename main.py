@@ -2,9 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 from db_methods import get_classes, get_signs, get_sign_id, get_sign_type, get_sign_num_value, get_sign_enum_value, get_class_id, \
-    get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes, get_bad_signs, get_bad_classes_sign
-
-# global num_data, enum_data
+    get_class_signs, get_signs_not_in_class, get_class_sign_num_value, get_class_sign_enum_value, get_bad_classes, get_bad_signs, get_bad_classes_sign, \
+    get_soil_class_feature_id_and_soil_class_id, get_soil_class_name, get_sign_name_from_soil_class_feature_id
 
 # Главное окно
 class Main(tk.Frame):
@@ -903,7 +902,7 @@ class SolveTheTask(tk.Toplevel):
     
     def init_solve_the_task(self):
         self.title('Система ввода данных')
-        self.geometry('650x450+350+250')
+        self.geometry('400x430+350+250')
         self.resizable(False, False)
 
         self.grid_rowconfigure(0, weight=0)
@@ -931,6 +930,8 @@ class SolveTheTask(tk.Toplevel):
 
         btn_DB = tk.Button(btn_frame, text='Просмотр базы знаний', command=self.open_viewer)
         btn_DB.grid(row=0, column=0)
+        btn_define_class = tk.Button(btn_frame, text='Определить класс почвы', command=self.open_solution)
+        btn_define_class.grid(row=0, column=1)
 
         sign_label = tk.Label(fld_frame, text='Выберите признак', bg='#D9D9D9')
         sign_label.grid(row=0, column=0, sticky='w')
@@ -953,21 +954,15 @@ class SolveTheTask(tk.Toplevel):
             enum_e.grid_forget()
             enum_b.grid_forget()
 
-            num_l2.grid(row=0, column=0, sticky='w')
-            num_e1.grid(row=0, column=1, padx=3)
-            num_e2.grid(row=0, column=2, padx=3)
-            num_l3.grid(row=0, column=3, sticky='w')
-            num_b.grid(row=0, column=4)
+            num_e.grid(row=0, column=0)
+            num_b.grid(row=0, column=1, padx=5)
             # help_label['text'] = f'Значение в диапазоне '
             # help_label.grid(row=4, column=0)
             list_data_label.grid(row=5, column=0, sticky='w')
         
         # Когда выбран перечислимый тип
         def select_type_enum():
-            num_l2.grid_forget()
-            num_e1.grid_forget()
-            num_e2.grid_forget()
-            num_l3.grid_forget()
+            num_e.grid_forget()
             num_b.grid_forget()
 
             enum_e.grid(row=0, column=0)
@@ -995,7 +990,7 @@ class SolveTheTask(tk.Toplevel):
                     select_type_enum()
 
                 for sign in num_data:
-                    data_list.insert(tk.END, f'{sign} | [{num_data[sign][0]}, {num_data[sign][1]}]')
+                    data_list.insert(tk.END, f'{sign} | {num_data[sign]}')
 
                 for sign in enum_data:
                     data_list.insert(tk.END, f'{sign} | {enum_data[sign]}')
@@ -1004,10 +999,10 @@ class SolveTheTask(tk.Toplevel):
         
         # Добавление значение числового признака в список
         def add_to_numdata_list():
-            if num_e2.get() == '':
-                num_data[cur_sign.get()] = [num_e1.get(), '+inf']
+            if num_e.get() == '':
+                num_data[cur_sign.get()] = '+inf'
             else:
-                num_data[cur_sign.get()] = [num_e1.get(), num_e2.get()]
+                num_data[cur_sign.get()] = num_e.get()
 
             view_entered_values()
         
@@ -1018,10 +1013,7 @@ class SolveTheTask(tk.Toplevel):
 
         sign_value_label = tk.Label(fld_frame, text='Введите значение', bg='#D9D9D9')
         # Виджеты для числового типа
-        num_l2 = tk.Label(type_frame, text='[', bg='#D9D9D9')
-        num_e1 = tk.Entry(type_frame, width=5)
-        num_e2 = tk.Entry(type_frame, width=5)
-        num_l3 = tk.Label(type_frame, text=']', bg='#D9D9D9')
+        num_e = tk.Entry(type_frame, width=5)
         num_b = tk.Button(type_frame, text='Добавить', command=add_to_numdata_list)
 
         # Виджеты для перечислимого типа
@@ -1050,13 +1042,136 @@ class SolveTheTask(tk.Toplevel):
             data_list.delete(selection[0])
 
         data_del = tk.Button(fld_frame, text='Удалить', command=del_data)
-
-        btn_define_class = tk.Button(btn_frame, text='Определить класс почвы')
-        btn_define_class.grid(row=0, column=1)
     
     # Открытие просмотра БД
     def open_viewer(self):
         ViewerDB()
+
+    # Открытие просмотра БД
+    def open_solution(self):
+        Solution()
+
+
+
+# Окно для просмотра БД
+class Solution(tk.Toplevel):
+    def __init__(self):
+        super().__init__(root)
+        self.init_editorDB()
+    
+    def init_editorDB(self):
+        self.title('Решение задачи')
+        self.geometry('650x450+400+300')
+        self.resizable(False, False)
+
+        self.grab_set()
+        self.focus_set()
+
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        back_frame = tk.Frame(self, bd=10)
+        back_frame.grid(row=0, column=0, sticky='we')
+
+        fld_frame = tk.Frame(self, bg='#D9D9D9', bd=10)
+        fld_frame.grid(row=1, column=0, sticky='wesn', padx=30, pady=30)
+
+        btn_back = tk.Button(back_frame, text='Назад', command=lambda: self.destroy())
+        btn_back.grid()
+
+
+        text_if_empy = tk.Label(fld_frame, text='Введите данные в предыдущем окне', bg='#D9D9D9')
+        good_frame = tk.Frame(fld_frame, bg='#D9D9D9')
+        good_frame.grid(row=1, column=0, sticky='we')
+        bad_frame = tk.Frame(fld_frame, bg='#D9D9D9')
+        bad_frame.grid(row=2, column=0, sticky='we')
+
+        # Получение классов, которые не подходят по введённым данным
+        def get_bad_classes_solution(list_of_classes, dict_for_bad_classes):
+            # Проверка по числовым признакам
+            for sign in num_data.keys():
+                sign_id = get_sign_id(sign)[0]
+                ids = get_soil_class_feature_id_and_soil_class_id(sign_id)
+
+                for record in ids:
+                    soil_class_feature_id = record[0]
+                    soil_class_id = record[1]
+                    # Записываем подходящий класс (тот, у которого есть введённый признак)
+                    list_of_classes.append(soil_class_id)
+
+                    # Получаем возможные значения признака у данного класса
+                    class_sign_values = get_class_sign_num_value(soil_class_id, sign_id)[0]
+
+                    if soil_class_id not in dict_for_bad_classes:
+                        if (class_sign_values[2] != None and num_data[sign] == '+inf') or (class_sign_values[2] != None and int(num_data[sign]) > class_sign_values[2]) or \
+                            (num_data[sign] != '+inf' and int(num_data[sign]) < class_sign_values[1]):
+                                dict_for_bad_classes[soil_class_id] = [sign_id, soil_class_feature_id, class_sign_values]
+                            
+                    
+            # Проверка по перечислимым признакам
+            for sign in enum_data.keys():
+                sign_id = get_sign_id(sign)[0]
+                ids = get_soil_class_feature_id_and_soil_class_id(sign_id)
+
+                for record in ids:
+                    soil_class_feature_id = record[0]
+                    soil_class_id = record[1]
+                    # Записываем подходящий класс (тот, у которого есть введённый признак)
+                    list_of_classes.append(soil_class_id)
+
+                    # Получаем возможные значения признака у данного класса
+                    class_sign_values = get_class_sign_enum_value(soil_class_id, sign_id)[0]
+
+                    if soil_class_id not in dict_for_bad_classes:
+                        if enum_data[sign] == '' or enum_data[sign] != class_sign_values[1]:
+                            dict_for_bad_classes[soil_class_id] = [sign_id, soil_class_feature_id, class_sign_values]
+            
+            return set(list_of_classes), dict_for_bad_classes
+
+        # Функция для вывода решения
+        def text_solution():
+            if not num_data and not enum_data:
+                text_if_empy.grid(row=0, column=0)
+            else:
+                # Список для классов, у которых есть выбранные признаки
+                list_of_classes = []
+                # Словарь для неподходящих классов (ключ - айди класса; значение - данные, из-за которых класс не подошёл)
+                dict_for_bad_classes = {}
+                list_of_classes, dict_for_bad_classes = get_bad_classes_solution(list_of_classes, dict_for_bad_classes)
+
+                # Индексы строк для вывода решения
+                row_good_id = 0
+                row_bad_id = 0
+                if dict_for_bad_classes:
+                    for soil_class_id in list_of_classes:
+                        # Если класс подходит по введённым данным
+                        if soil_class_id not in dict_for_bad_classes:
+                            name = get_soil_class_name(soil_class_id)[0]
+                            tk.Label(good_frame, text=f'По введённым данным подходит класс: {name}', bg='#D9D9D9').grid(row=row_good_id, column=0, sticky='w')
+                            row_good_id +=1
+                            
+                        # Если класс не подходит по введённым данным
+                        else:
+                            class_name = get_soil_class_name(soil_class_id)[0]
+                            sign_name = get_sign_name_from_soil_class_feature_id(dict_for_bad_classes[soil_class_id][1])[0]
+                            sign_type= get_sign_type(sign_name)[0]
+
+                            # Вывод решения для числовых признаков
+                            if sign_type == 0:
+                                tk.Label(bad_frame, text=f'По введённым данным не подходит класс: {class_name}, так как', bg='#D9D9D9').grid(row=row_bad_id, column=0, sticky='w')
+                                tk.Label(bad_frame, text=f'значение признака {sign_name} должен быть в диапазоне [{dict_for_bad_classes[soil_class_id][2][1]}, {dict_for_bad_classes[soil_class_id][2][2]}]', bg='#D9D9D9').grid(row=row_bad_id+1, column=0, sticky='w')
+                                row_bad_id += 2
+                            
+                            # Вывод решения для перечислимых признаков
+                            elif sign_type == 1:
+                                tk.Label(bad_frame, text=f'По введённым данным не подходит класс: {class_name}, так как', bg='#D9D9D9').grid(row=row_bad_id, column=0, sticky='w')
+                                tk.Label(bad_frame, text=f'значение признака {sign_name} должно совпадать со значением {dict_for_bad_classes[soil_class_id][2][1]}', bg='#D9D9D9').grid(row=row_bad_id+1, column=0, sticky='w')
+                                row_bad_id += 2
+        
+        # Функция для вывода решения
+        text_solution()
+
 
 
 
@@ -1128,7 +1243,6 @@ class ViewerDB(tk.Toplevel):
 
                 # Для числового типа
                 if sign_type == 0:
-                    # select_type_num()
                     class_sign_enum_value_list.grid_forget()
                     class_sign_num_value_list.delete(first=0, last=tk.END)
                     sign_value = get_class_sign_num_value(class_id, sign_id)
